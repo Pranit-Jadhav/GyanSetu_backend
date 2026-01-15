@@ -1,0 +1,86 @@
+# ==============================
+# Python
+# ==============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# ==============================
+# Package / build artifacts
+# ==============================
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ==============================
+# Dependency / tooling caches
+# ==============================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.nox/
+.tox/
+
+# ==============================
+# IDE / Editor
+# ==============================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==============================
+# OS
+# ==============================
+.DS_Store
+Thumbs.db
+
+# ==============================
+# Logs & runtime
+# ==============================
+*.log
+logs/
+*.pid
+
+# ==============================
+# Environment & secrets
+# ==============================
+.env.*
+!.env.example
+
+# ==============================
+# Databases / local state
+# ==============================
+*.sqlite3
+*.db
+
+# ==============================
+# Jupyter / ML (if applicable)
+# ==============================
+.ipynb_checkpoints/
+data/
+models/
+wandb/
+mlruns/
+
+# ==============================
+# FastAPI / ASGI
+# ==============================
+*.sock
+
+# ==============================
+# Docker
+# ==============================
+docker-compose.override.yml

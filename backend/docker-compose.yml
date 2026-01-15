@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: gyansetu-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: gyansetu
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - gyansetu-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: gyansetu-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - gyansetu-network
+
+  backend:
+    build: .
+    container_name: gyansetu-backend
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      MONGODB_URI: mongodb://mongodb:27017/gyansetu
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - gyansetu-network
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  gyansetu-network:
+    driver: bridge

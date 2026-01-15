@@ -1,0 +1,1651 @@
+{
+  "info": {
+    "_postman_id": "gyansetu-api-collection",
+    "name": "GyanSetu API Collection",
+    "description": "Complete API collection for GyanSetu Backend - Adaptive Mastery & Engagement Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "python_base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "teacher_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "student_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "student_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "teacher_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "class_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subject_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "module_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "concept_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "assessment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "description": "User registration, login, and authentication endpoints. WHY: Essential for securing the platform and managing user access with role-based permissions.",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        if (jsonData.user.role === 'TEACHER') {",
+                  "            pm.collectionVariables.set('teacher_token', jsonData.token);",
+                  "            pm.collectionVariables.set('teacher_id', jsonData.user.id);",
+                  "        } else if (jsonData.user.role === 'STUDENT') {",
+                  "            pm.collectionVariables.set('student_token', jsonData.token);",
+                  "            pm.collectionVariables.set('student_id', jsonData.user.id);",
+                  "        } else if (jsonData.user.role === 'ADMIN') {",
+                  "            pm.collectionVariables.set('admin_token', jsonData.token);",
+                  "        }",
+                  "        pm.collectionVariables.set('auth_token', jsonData.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teacher@gyansetu.com\",\n  \"password\": \"password123\",\n  \"role\": \"TEACHER\",\n  \"name\": \"John Teacher\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Register a new user with email, password, role, and optional name. WHY: Creates user accounts for teachers, students, and admins with proper role-based access control."
+          }
+        },
+        {
+          "name": "Register Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.collectionVariables.set('student_token', jsonData.token);",
+                  "        pm.collectionVariables.set('student_id', jsonData.user.id);",
+                  "        pm.collectionVariables.set('auth_token', jsonData.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@gyansetu.com\",\n  \"password\": \"password123\",\n  \"role\": \"STUDENT\",\n  \"name\": \"Jane Student\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Register a student user. WHY: Separate endpoint example for student registration."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.collectionVariables.set('auth_token', jsonData.token);",
+                  "        if (jsonData.user.role === 'TEACHER') {",
+                  "            pm.collectionVariables.set('teacher_token', jsonData.token);",
+                  "            pm.collectionVariables.set('teacher_id', jsonData.user.id);",
+                  "        } else if (jsonData.user.role === 'STUDENT') {",
+                  "            pm.collectionVariables.set('student_token', jsonData.token);",
+                  "            pm.collectionVariables.set('student_id', jsonData.user.id);",
+                  "        }",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teacher@gyansetu.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login with email and password. Returns JWT token for authentication. WHY: Authenticates users and provides access tokens for subsequent API calls."
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Get current authenticated user information. WHY: Validates token and retrieves user profile for session management."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏫 Classroom Management",
+      "description": "Classroom creation, joining, and student management. WHY: Enables teachers to create classrooms and students to join via join codes for organized learning environments.",
+      "item": [
+        {
+          "name": "Create Classroom",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('class_id', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"DSA Class A\",\n  \"academicYear\": \"2024-2025\",\n  \"course\": \"Data Structures and Algorithms\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/classes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "classes"]
+            },
+            "description": "Create a new classroom. Auto-generates join code. WHY: Teachers can create classrooms for specific courses and academic years with unique join codes for easy student enrollment."
+          }
+        },
+        {
+          "name": "Join Class by Code",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"joinCode\": \"ABC123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/classes/join",
+              "host": ["{{base_url}}"],
+              "path": ["api", "classes", "join"]
+            },
+            "description": "Join a classroom using the join code. WHY: Students can easily join classrooms without needing to know the exact class ID, improving UX."
+          }
+        },
+        {
+          "name": "Get Class Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/classes/{{class_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "classes", "{{class_id}}"]
+            },
+            "description": "Get classroom details including teacher and students. WHY: Retrieves complete classroom information for dashboards and management."
+          }
+        },
+        {
+          "name": "Get Class Students",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/classes/{{class_id}}/students",
+              "host": ["{{base_url}}"],
+              "path": ["api", "classes", "{{class_id}}", "students"]
+            },
+            "description": "Get all students enrolled in a class. WHY: Enables teachers to view and manage class roster."
+          }
+        }
+      ]
+    },
+    {
+      "name": "📚 Curriculum Management",
+      "description": "Create and manage curriculum structure: Subjects → Modules → Concepts. WHY: Establishes the learning hierarchy that powers mastery tracking and adaptive learning.",
+      "item": [
+        {
+          "name": "Create Subject",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('subject_id', jsonData._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Data Structures and Algorithms\",\n  \"code\": \"DSA\",\n  \"description\": \"Introduction to data structures and algorithms\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/curriculum/subjects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "curriculum", "subjects"]
+            },
+            "description": "Create a new subject. WHY: Defines the top-level curriculum category (e.g., DSA, Computer Networks) that contains modules and concepts."
+          }
+        },
+        {
+          "name": "Get All Subjects",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/curriculum/subjects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "curriculum", "subjects"]
+            },
+            "description": "Get all available subjects. WHY: Lists all subjects for curriculum selection and display."
+          }
+        },
+        {
+          "name": "Get Subject",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/curriculum/subjects/{{subject_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "curriculum", "subjects", "{{subject_id}}"]
+            },
+            "description": "Get specific subject details. WHY: Retrieves subject information including modules and concepts."
+          }
+        },
+        {
+          "name": "Create Module",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('module_id', jsonData._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Trees\",\n  \"code\": \"TREES\",\n  \"subjectId\": \"{{subject_id}}\",\n  \"description\": \"Tree data structures and algorithms\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/curriculum/modules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "curriculum", "modules"]
+            },
+            "description": "Create a module within a subject. WHY: Organizes concepts into logical groups (e.g., Trees, Arrays) within a subject for better curriculum structure."
+          }
+        },
+        {
+          "name": "Get Modules by Subject",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/curriculum/modules/subject/{{subject_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "curriculum",
+                "modules",
+                "subject",
+                "{{subject_id}}"
+              ]
+            },
+            "description": "Get all modules for a subject. WHY: Lists all modules in a subject for curriculum navigation."
+          }
+        },
+        {
+          "name": "Create Concept",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('concept_id', jsonData._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Depth First Search\",\n  \"code\": \"DFS\",\n  \"moduleId\": \"{{module_id}}\",\n  \"subjectId\": \"{{subject_id}}\",\n  \"description\": \"DFS traversal algorithm\",\n  \"difficulty\": \"MEDIUM\",\n  \"prerequisites\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/curriculum/concepts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "curriculum", "concepts"]
+            },
+            "description": "Create a concept within a module. WHY: Defines individual learning concepts that can be tracked for mastery (e.g., DFS, BFS, Binary Search)."
+          }
+        },
+        {
+          "name": "Get Concepts by Module",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/curriculum/concepts/module/{{module_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "curriculum",
+                "concepts",
+                "module",
+                "{{module_id}}"
+              ]
+            },
+            "description": "Get all concepts in a module. WHY: Lists all concepts within a module for assessment creation and mastery tracking."
+          }
+        },
+        {
+          "name": "Get Full Curriculum",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/curriculum/subjects/{{subject_id}}/full",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "curriculum",
+                "subjects",
+                "{{subject_id}}",
+                "full"
+              ]
+            },
+            "description": "Get complete curriculum structure for a subject (with all modules and concepts). WHY: Retrieves the entire curriculum hierarchy for display and navigation."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧠 Mastery Engine",
+      "description": "Bayesian Knowledge Tracing (BKT) based mastery tracking. WHY: Provides explainable, adaptive learning intelligence that tracks student mastery at concept, module, and subject levels.",
+      "item": [
+        {
+          "name": "Update Mastery",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{student_id}}\",\n  \"conceptId\": \"{{concept_id}}\",\n  \"correct\": true,\n  \"engagement\": 1.2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/mastery/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mastery", "update"]
+            },
+            "description": "Update concept mastery after answering a question. WHY: Core endpoint that updates BKT mastery probabilities based on student performance and engagement."
+          }
+        },
+        {
+          "name": "Get Concept Mastery",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/mastery/concept/{{student_id}}/{{concept_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "mastery",
+                "concept",
+                "{{student_id}}",
+                "{{concept_id}}"
+              ]
+            },
+            "description": "Get mastery for a specific concept. WHY: Retrieves individual concept mastery score (0-100) and probability for student dashboards."
+          }
+        },
+        {
+          "name": "Get Module Mastery",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/mastery/module/{{student_id}}/{{module_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "mastery",
+                "module",
+                "{{student_id}}",
+                "{{module_id}}"
+              ]
+            },
+            "description": "Get mastery for a module (aggregated from concepts). WHY: Calculates average mastery across all concepts in a module for progress tracking."
+          }
+        },
+        {
+          "name": "Get Subject Mastery",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/mastery/subject/{{student_id}}/{{subject_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "mastery",
+                "subject",
+                "{{student_id}}",
+                "{{subject_id}}"
+              ]
+            },
+            "description": "Get subject mastery dashboard. WHY: Provides comprehensive mastery view with module breakdowns and status indicators."
+          }
+        },
+        {
+          "name": "Get Practice Plan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/mastery/practice/{{student_id}}/{{subject_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "mastery",
+                "practice",
+                "{{student_id}}",
+                "{{subject_id}}"
+              ]
+            },
+            "description": "Get adaptive practice plan based on ZPD. WHY: Generates personalized practice recommendations (remedial/core/stretch) using Zone of Proximal Development."
+          }
+        },
+        {
+          "name": "Get Overall Student Mastery",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/mastery/student/{{student_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mastery", "student", "{{student_id}}"]
+            },
+            "description": "Get overall mastery across all concepts. WHY: Provides aggregate mastery score for student progress overview."
+          }
+        },
+        {
+          "name": "Get At-Risk Students",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "threshold",
+                "value": "50",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/mastery/at-risk?threshold=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mastery", "at-risk"],
+              "query": [
+                {
+                  "key": "threshold",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get students with mastery below threshold. WHY: Identifies students needing intervention for early support."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧪 Assessments",
+      "description": "Create and manage assessments (manual or AI-generated). WHY: Enables teachers to evaluate student learning and automatically update mastery tracking.",
+      "item": [
+        {
+          "name": "Create Manual Assessment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('assessment_id', jsonData._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"DFS Assessment\",\n  \"description\": \"Test your knowledge of Depth First Search\",\n  \"classId\": \"{{class_id}}\",\n  \"subjectId\": \"{{subject_id}}\",\n  \"questions\": [\n    {\n      \"question\": \"What is the time complexity of DFS?\",\n      \"options\": [\"O(V)\", \"O(V+E)\", \"O(E)\", \"O(V*E)\"],\n      \"correctAnswer\": 1,\n      \"conceptId\": \"{{concept_id}}\",\n      \"points\": 1\n    }\n  ],\n  \"dueDate\": \"2024-12-31T23:59:59Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/assessments/manual",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assessments", "manual"]
+            },
+            "description": "Create a manual assessment with custom questions. WHY: Allows teachers to create assessments with full control over question content and concept mapping."
+          }
+        },
+        {
+          "name": "Generate AI Assessment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('assessment_id', jsonData._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"DFS Practice Quiz\",\n  \"description\": \"AI-generated quiz on DFS\",\n  \"classId\": \"{{class_id}}\",\n  \"subjectId\": \"{{subject_id}}\",\n  \"topic\": \"Depth First Search\",\n  \"difficulty\": \"MEDIUM\",\n  \"questionCount\": 5,\n  \"conceptId\": \"{{concept_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/assessments/ai-generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assessments", "ai-generate"]
+            },
+            "description": "Generate assessment using Gemini AI. WHY: Saves time by automatically generating MCQ questions based on topic and difficulty level."
+          }
+        },
+        {
+          "name": "Launch Assessment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/assessments/{{assessment_id}}/launch",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assessments", "{{assessment_id}}", "launch"]
+            },
+            "description": "Launch an assessment to make it available to students. WHY: Changes assessment status from DRAFT to LAUNCHED so students can take it."
+          }
+        },
+        {
+          "name": "Get Assessment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/assessments/{{assessment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assessments", "{{assessment_id}}"]
+            },
+            "description": "Get assessment details. WHY: Retrieves assessment information including questions (for students when launched)."
+          }
+        },
+        {
+          "name": "Submit Assessment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"question_id_here\",\n      \"selectedOption\": 1\n    }\n  ],\n  \"timeSpent\": 300,\n  \"engagement\": 1.2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/assessments/{{assessment_id}}/submit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assessments", "{{assessment_id}}", "submit"]
+            },
+            "description": "Submit assessment answers. WHY: Records student responses, calculates score, and automatically updates mastery for each concept."
+          }
+        },
+        {
+          "name": "Get Assessment Results",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/assessments/{{assessment_id}}/results",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assessments", "{{assessment_id}}", "results"]
+            },
+            "description": "Get assessment results and statistics. WHY: Provides teacher view of all student submissions with aggregated statistics."
+          }
+        },
+        {
+          "name": "Get My Attempt",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/assessments/{{assessment_id}}/attempt",
+              "host": ["{{base_url}}"],
+              "path": ["api", "assessments", "{{assessment_id}}", "attempt"]
+            },
+            "description": "Get student's own attempt. WHY: Allows students to view their submitted answers and scores."
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚡ Engagement Tracking",
+      "description": "Track student engagement in real-time. WHY: Monitors student activity, confusion signals, and engagement metrics for proactive intervention.",
+      "item": [
+        {
+          "name": "Log Engagement",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{student_id}}\",\n  \"classId\": \"{{class_id}}\",\n  \"idleTime\": 20,\n  \"interactions\": 5,\n  \"pollParticipation\": 1,\n  \"tabFocus\": 85\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/engagement/log",
+              "host": ["{{base_url}}"],
+              "path": ["api", "engagement", "log"]
+            },
+            "description": "Log student engagement metrics. WHY: Records engagement data (idle time, interactions, tab focus) for real-time monitoring and alerts."
+          }
+        },
+        {
+          "name": "Get Class Engagement",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/engagement/class/{{class_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "engagement", "class", "{{class_id}}"]
+            },
+            "description": "Get engagement data for entire class. WHY: Provides teacher dashboard with class-wide engagement metrics and individual student data."
+          }
+        },
+        {
+          "name": "Get Student Engagement",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/engagement/student/{{student_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "engagement", "student", "{{student_id}}"]
+            },
+            "description": "Get engagement data for a specific student. WHY: Tracks individual student engagement across all classes for progress monitoring."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚨 Alerts",
+      "description": "Real-time confusion and engagement alerts. WHY: Provides immediate notifications to teachers when students need intervention.",
+      "item": [
+        {
+          "name": "Get Class Alerts",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/alerts/class/{{class_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "alerts", "class", "{{class_id}}"]
+            },
+            "description": "Get all alerts for a class. WHY: Retrieves confusion signals, engagement drops, and mastery threshold alerts for teacher intervention."
+          }
+        },
+        {
+          "name": "Resolve Alert",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/alerts/:alert_id/resolve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "alerts", ":alert_id", "resolve"]
+            },
+            "description": "Mark an alert as resolved. WHY: Allows teachers to acknowledge and close alerts after addressing student needs."
+          }
+        }
+      ]
+    },
+    {
+      "name": "👑 Admin",
+      "description": "Admin features for content templates and institutional metrics. WHY: Enables workload reduction through reusable content and provides unified institutional reporting.",
+      "item": [
+        {
+          "name": "Create Template",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"PROJECT\",\n  \"title\": \"IoT Project Template\",\n  \"description\": \"Template for IoT-based projects\",\n  \"subjectId\": \"{{subject_id}}\",\n  \"structure\": {\n    \"milestones\": [\"Design\", \"Prototype\", \"Testing\"],\n    \"rubrics\": [\"Teamwork\", \"Creativity\", \"Technical Skills\"]\n  },\n  \"isPublic\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/templates",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "templates"]
+            },
+            "description": "Create a content template (PROJECT, ASSESSMENT, or RUBRIC). WHY: Enables admins to create reusable templates that reduce teacher workload."
+          }
+        },
+        {
+          "name": "Get Templates",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/templates?type=PROJECT&isPublic=true",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "templates"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "PROJECT"
+                },
+                {
+                  "key": "isPublic",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get templates with optional filters. WHY: Allows teachers to search and use available templates for faster content creation."
+          }
+        },
+        {
+          "name": "Get Admin Dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "dashboard"]
+            },
+            "description": "Get institutional metrics dashboard. WHY: Provides unified reporting with Mastery Rate, Teacher Adoption Rate, and Administrative Confidence Score."
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Project-Based Learning (PBL)",
+      "description": "Manage projects, teams, and artifacts. WHY: Supports collaborative learning through structured project execution and peer assessment.",
+      "item": [
+        {
+          "name": "Create Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('project_id', jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Smart Traffic System\",\n  \"description\": \"IoT-based traffic management project\",\n  \"classId\": \"{{class_id}}\",\n  \"milestones\": [\"Design\", \"Prototype\", \"Testing\"],\n  \"rubrics\": [\"Teamwork\", \"Creativity\", \"Technical Skills\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects"]
+            },
+            "description": "Create a new PBL project. WHY: Enables teachers to create structured projects with milestones and rubrics for collaborative learning."
+          }
+        },
+        {
+          "name": "Get Project",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}"]
+            },
+            "description": "Get project details including teams and artifacts. WHY: Retrieves complete project information for management and progress tracking."
+          }
+        },
+        {
+          "name": "Create Team",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teamId\": \"team1\",\n  \"members\": [\"{{student_id}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/team",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}", "team"]
+            },
+            "description": "Create a team for a project. WHY: Enables team formation for collaborative project work."
+          }
+        },
+        {
+          "name": "Submit Artifact",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"teamId\": \"team1\",\n  \"artifactId\": \"art1\",\n  \"url\": \"https://github.com/team1/project\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/{{project_id}}/artifact",
+              "host": ["{{base_url}}"],
+              "path": ["api", "projects", "{{project_id}}", "artifact"]
+            },
+            "description": "Submit project artifact (link or text). WHY: Allows teams to submit project deliverables for evaluation."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🤝 Soft Skills",
+      "description": "Peer review and soft skill assessment. WHY: Enables objective evaluation of teamwork, communication, and leadership through peer feedback.",
+      "item": [
+        {
+          "name": "Submit Peer Review",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewerId\": \"{{student_id}}\",\n  \"revieweeId\": \"student_id_2\",\n  \"projectId\": \"{{project_id}}\",\n  \"teamwork\": 82,\n  \"communication\": 75,\n  \"leadership\": 68,\n  \"creativity\": 90,\n  \"comments\": \"Great collaboration skills\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/soft-skills/peer-review",
+              "host": ["{{base_url}}"],
+              "path": ["api", "soft-skills", "peer-review"]
+            },
+            "description": "Submit peer review ratings. WHY: Captures peer feedback on soft skills for comprehensive student evaluation."
+          }
+        },
+        {
+          "name": "Get Student Soft Skills",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/soft-skills/{{student_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "soft-skills", "{{student_id}}"]
+            },
+            "description": "Get aggregated soft skill scores for a student. WHY: Provides comprehensive view of student's soft skills based on peer reviews."
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Dashboards",
+      "description": "Analytics and reporting dashboards. WHY: Provides actionable insights for teachers and administrators to monitor learning outcomes.",
+      "item": [
+        {
+          "name": "Get Teacher Dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/teacher",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "teacher"]
+            },
+            "description": "Get teacher analytics dashboard. WHY: Provides comprehensive view of classes, students, mastery, engagement, and alerts for teachers."
+          }
+        },
+        {
+          "name": "Get Admin Dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/admin",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "admin"]
+            },
+            "description": "Get admin institutional dashboard. WHY: Provides system-wide metrics for institutional reporting and decision-making."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🐍 Python Mastery Backend",
+      "description": "Direct Python BKT engine endpoints (for testing/integration). WHY: These endpoints are called by Node.js backend but can be tested directly for BKT engine validation.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/",
+              "host": ["{{python_base_url}}"]
+            },
+            "description": "Check Python backend health."
+          }
+        },
+        {
+          "name": "Update Mastery (Python)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"S101\",\n  \"concept_id\": \"DFS\",\n  \"correct\": true,\n  \"engagement\": 1.2\n}"
+            },
+            "url": {
+              "raw": "{{python_base_url}}/mastery/update",
+              "host": ["{{python_base_url}}"],
+              "path": ["mastery", "update"]
+            },
+            "description": "Update mastery in Python backend (called by Node.js)."
+          }
+        },
+        {
+          "name": "Get Concept Mastery (Python)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/mastery/concept/S101/DFS",
+              "host": ["{{python_base_url}}"],
+              "path": ["mastery", "concept", "S101", "DFS"]
+            },
+            "description": "Get concept mastery from Python backend."
+          }
+        },
+        {
+          "name": "Get Practice Plan (Python)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{python_base_url}}/mastery/practice/S101/DSA",
+              "host": ["{{python_base_url}}"],
+              "path": ["mastery", "practice", "S101", "DSA"]
+            },
+            "description": "Get adaptive practice plan from Python backend."
+          }
+        }
+      ]
+    },
+    {
+      "name": "💚 Health Check",
+      "item": [
+        {
+          "name": "Backend Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check backend server health status."
+          }
+        }
+      ]
+    }
+  ]
+}
