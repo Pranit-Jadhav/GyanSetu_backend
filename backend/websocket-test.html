@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GyanSetu WebSocket Test</title>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px; 
+      background: #f5f5f5;
+    }
+    .container { 
+      max-width: 900px; 
+      margin: 0 auto; 
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; }
+    .section { 
+      margin: 20px 0; 
+      padding: 15px; 
+      background: #fafafa; 
+      border-radius: 4px;
+    }
+    label { 
+      display: block; 
+      margin-bottom: 5px; 
+      font-weight: bold;
+      color: #555;
+    }
+    input { 
+      padding: 10px; 
+      margin: 5px 0; 
+      width: 100%;
+      max-width: 600px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button { 
+      padding: 10px 20px; 
+      margin: 5px; 
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #0056b3; }
+    button:disabled { 
+      background: #ccc; 
+      cursor: not-allowed; 
+    }
+    #messages { 
+      border: 1px solid #ddd; 
+      padding: 15px; 
+      height: 400px; 
+      overflow-y: auto; 
+      background: #fff;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+    .message { 
+      margin: 8px 0; 
+      padding: 8px; 
+      border-radius: 4px;
+      word-wrap: break-word;
+    }
+    .message.info { background: #e3f2fd; border-left: 3px solid #2196F3; }
+    .message.success { background: #e8f5e9; border-left: 3px solid #4CAF50; }
+    .message.error { background: #ffebee; border-left: 3px solid #f44336; }
+    .message.alert { background: #fff3e0; border-left: 3px solid #ff9800; }
+    .status { 
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .status.connected { background: #4CAF50; color: white; }
+    .status.disconnected { background: #f44336; color: white; }
+    .status.connecting { background: #ff9800; color: white; }
+    code {
+      background: #f5f5f5;
+      padding: 2px 4px;
+      border-radius: 2px;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔌 GyanSetu WebSocket Test Client</h1>
+    
+    <div class="section">
+      <label>Connection Status: <span id="status" class="status disconnected">Disconnected</span></label>
+      <div id="socketId" style="font-size: 12px; color: #666; margin-top: 5px;"></div>
+    </div>
+
+    <div class="section">
+      <label>JWT Token: <small>(Get from Postman after login/register)</small></label>
+      <input type="text" id="token" placeholder="Enter your JWT token (e.g., eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...)" />
+      <small style="color: #666;">Token is stored in browser localStorage for convenience</small>
+    </div>
+    
+    <div class="section">
+      <label>Class ID: <small>(Required for Teachers/Admin to join class room)</small></label>
+      <input type="text" id="classId" placeholder="Enter class ID to join (optional for students)" />
+    </div>
+    
+    <div class="section">
+      <button onclick="connect()" id="connectBtn">Connect</button>
+      <button onclick="joinClass()" id="joinBtn" disabled>Join Class</button>
+      <button onclick="disconnect()" id="disconnectBtn" disabled>Disconnect</button>
+      <button onclick="clearMessages()">Clear Messages</button>
+    </div>
+    
+    <div class="section">
+      <h3>📨 Messages & Events:</h3>
+      <div id="messages"></div>
+    </div>
+  </div>
+
+  <script>
+    let socket = null;
+
+    // Load token from localStorage if available
+    window.onload = () => {
+      const savedToken = localStorage.getItem('gyansetu_token');
+      const savedClassId = localStorage.getItem('gyansetu_classId');
+      if (savedToken) {
+        document.getElementById('token').value = savedToken;
+      }
+      if (savedClassId) {
+        document.getElementById('classId').value = savedClassId;
+      }
+    };
+
+    function updateStatus(status, text) {
+      const statusEl = document.getElementById('status');
+      statusEl.className = `status ${status}`;
+      statusEl.textContent = text;
+    }
+
+    function updateSocketId(id) {
+      document.getElementById('socketId').textContent = id ? `Socket ID: ${id}` : '';
+    }
+
+    function addMessage(message, type = 'info') {
+      const messagesDiv = document.getElementById('messages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${type}`;
+      
+      // Format JSON if object
+      let displayText = typeof message === 'object' 
+        ? JSON.stringify(message, null, 2) 
+        : message;
+      
+      messageDiv.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong><br><pre style="margin: 5px 0; white-space: pre-wrap;">${displayText}</pre>`;
+      messagesDiv.appendChild(messageDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function clearMessages() {
+      document.getElementById('messages').innerHTML = '';
+    }
+
+    function connect() {
+      const token = document.getElementById('token').value.trim();
+      if (!token) {
+        alert('Please enter a JWT token');
+        return;
+      }
+
+      // Save token to localStorage
+      localStorage.setItem('gyansetu_token', token);
+
+      updateStatus('connecting', 'Connecting...');
+      addMessage('🔄 Connecting to Socket.IO server at http://localhost:3001...', 'info');
+      
+      socket = io('http://localhost:3001', {
+        auth: {
+          token: token
+        },
+        transports: ['websocket', 'polling']
+      });
+
+      socket.on('connect', () => {
+        updateStatus('connected', 'Connected');
+        updateSocketId(socket.id);
+        addMessage(`✅ Successfully connected! Socket ID: ${socket.id}`, 'success');
+        document.getElementById('connectBtn').disabled = true;
+        document.getElementById('joinBtn').disabled = false;
+        document.getElementById('disconnectBtn').disabled = false;
+      });
+
+      socket.on('connect_error', (error) => {
+        updateStatus('disconnected', 'Connection Failed');
+        addMessage(`❌ Connection error: ${error.message}`, 'error');
+        if (error.message.includes('token') || error.message.includes('Authentication')) {
+          addMessage('💡 Tip: Make sure your token is valid and not expired. Try logging in again in Postman.', 'info');
+        }
+      });
+
+      socket.on('disconnect', (reason) => {
+        updateStatus('disconnected', 'Disconnected');
+        updateSocketId('');
+        addMessage(`🔌 Disconnected from server. Reason: ${reason}`, 'info');
+        document.getElementById('connectBtn').disabled = false;
+        document.getElementById('joinBtn').disabled = true;
+        document.getElementById('disconnectBtn').disabled = true;
+      });
+
+      // Listen for all alert events
+      socket.on('CONFUSION_ALERT', (data) => {
+        addMessage({
+          event: 'CONFUSION_ALERT',
+          data: data
+        }, 'alert');
+      });
+
+      socket.on('ENGAGEMENT_DROP', (data) => {
+        addMessage({
+          event: 'ENGAGEMENT_DROP',
+          data: data
+        }, 'alert');
+      });
+
+      socket.on('MASTERY_THRESHOLD', (data) => {
+        addMessage({
+          event: 'MASTERY_THRESHOLD',
+          data: data
+        }, 'info');
+      });
+
+      socket.on('ALERT', (data) => {
+        addMessage({
+          event: 'ALERT',
+          data: data
+        }, 'alert');
+      });
+
+      // Save socket globally for debugging
+      window.testSocket = socket;
+    }
+
+    function joinClass() {
+      const classId = document.getElementById('classId').value.trim();
+      if (!socket || !socket.connected) {
+        alert('Please connect first');
+        return;
+      }
+      if (!classId) {
+        alert('Please enter a class ID');
+        return;
+      }
+      
+      // Save class ID to localStorage
+      localStorage.setItem('gyansetu_classId', classId);
+      
+      socket.emit('join-class', classId);
+      addMessage(`📚 Emitted 'join-class' event with class ID: ${classId}`, 'success');
+      addMessage('💡 You should now receive alerts for this class. Try creating an alert via the API.', 'info');
+    }
+
+    function disconnect() {
+      if (socket) {
+        socket.disconnect();
+        socket = null;
+        updateStatus('disconnected', 'Disconnected');
+        updateSocketId('');
+        addMessage('🔌 Manually disconnected from server', 'info');
+        document.getElementById('connectBtn').disabled = false;
+        document.getElementById('joinBtn').disabled = true;
+        document.getElementById('disconnectBtn').disabled = true;
+      }
+    }
+
+    // Helper: Format JSON in messages
+    window.formatJSON = (obj) => JSON.stringify(obj, null, 2);
+  </script>
+</body>
+</html>

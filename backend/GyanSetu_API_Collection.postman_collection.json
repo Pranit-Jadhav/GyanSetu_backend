@@ -1630,6 +1630,25 @@
       ]
     },
     {
+      "name": "🔌 WebSocket Testing",
+      "description": "Real-time WebSocket events for live engagement and alerts. WHY: Enables real-time communication between students and teachers for confusion signals, engagement tracking, and instant alerts. Note: Postman has limited Socket.IO support. Use the provided HTML test page or browser console for full testing.",
+      "item": [
+        {
+          "name": "WebSocket Connection Instructions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/websocket-test.html",
+              "host": ["{{base_url}}"],
+              "path": ["websocket-test.html"]
+            },
+            "description": "⚠️ IMPORTANT: Postman doesn't fully support Socket.IO WebSocket protocol.\n\nTo test WebSocket events, use one of these methods:\n\nMETHOD 1: Browser Console (Easiest)\n1. Open browser DevTools Console (F12)\n2. Load Socket.IO client library\n3. Connect using your auth token\n\nMETHOD 2: HTML Test Page\nUse the WebSocket test page provided in the collection\n\nMETHOD 3: Socket.IO Client Tool\nUse a Socket.IO client like 'Socket.IO Client Tool' extension\n\nSee WEBSOCKET_TESTING_GUIDE.md for detailed steps.\n\nAvailable Events:\n\n📤 CLIENT → SERVER:\n- join-class (classId) - Join class room (Teacher/Admin only)\n- disconnect - Disconnect from server\n\n📥 SERVER → CLIENT:\n- CONFUSION_ALERT - Confusion signal detected\n- ENGAGEMENT_DROP - Student engagement dropped\n- MASTERY_THRESHOLD - Mastery threshold crossed\n- ALERT - General alert notification\n\nAuthentication:\n- Token via socket.handshake.auth.token\n- OR via Authorization header: 'Bearer <token>'"
+          }
+        }
+      ]
+    },
+    {
       "name": "💚 Health Check",
       "item": [
         {

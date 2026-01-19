@@ -5,6 +5,7 @@ This guide explains how to import and use the GyanSetu API Postman Collection.
 ## 📥 Importing the Collection
 
 ### Method 1: Import JSON File
+
 1. Open Postman
 2. Click **Import** button (top left)
 3. Select **File** tab
@@ -12,6 +13,7 @@ This guide explains how to import and use the GyanSetu API Postman Collection.
 5. Click **Import**
 
 ### Method 2: Import via URL
+
 1. Open Postman
 2. Click **Import**
 3. Select **Link** tab
@@ -23,12 +25,15 @@ This guide explains how to import and use the GyanSetu API Postman Collection.
 After importing, configure collection variables:
 
 ### Base URLs
+
 1. Click on collection name → **Variables** tab
 2. Set `base_url` = `http://localhost:3001` (Node.js backend)
 3. Set `python_base_url` = `http://localhost:8000` (Python backend)
 
 ### Auto-populated Variables
+
 These are automatically set by the collection:
+
 - `auth_token` - Current user's token
 - `teacher_token` - Teacher user token
 - `student_token` - Student user token
@@ -45,10 +50,12 @@ These are automatically set by the collection:
 ## 🚀 Quick Start Testing Flow
 
 ### Step 1: Health Check
+
 - Run `💚 Health Check` → `Backend Health`
 - Verify server is running
 
 ### Step 2: Register Users
+
 1. Run `🔐 Authentication` → `Register User` (as TEACHER)
    - Token is auto-saved to `teacher_token`
    - Teacher ID saved to `teacher_id`
@@ -57,6 +64,7 @@ These are automatically set by the collection:
    - Student ID saved to `student_id`
 
 ### Step 3: Create Curriculum
+
 1. `📚 Curriculum Management` → `Create Subject`
    - Creates DSA subject
    - Saves `subject_id`
@@ -66,30 +74,36 @@ These are automatically set by the collection:
    - Saves `concept_id`
 
 ### Step 4: Create Classroom
+
 1. `🏫 Classroom Management` → `Create Classroom`
    - Saves `class_id`
    - Note the `joinCode` in response
 
 ### Step 5: Join Classroom
+
 1. `Join Class by Code`
    - Use the join code from Step 4
 
 ### Step 6: Create Assessment
+
 1. `🧪 Assessments` → `Create Manual Assessment` or `Generate AI Assessment`
    - Saves `assessment_id`
 2. `Launch Assessment`
 
 ### Step 7: Submit Assessment
+
 1. `Submit Assessment`
    - Answers are validated and mastery is updated automatically
 
 ### Step 8: Check Mastery
+
 1. `🧠 Mastery Engine` → `Get Concept Mastery`
    - View updated mastery scores
 
 ## 📝 Request Flow Examples
 
 ### Complete Learning Flow
+
 ```
 1. Register Student → Get student_id
 2. Create Subject → Get subject_id
@@ -105,6 +119,7 @@ These are automatically set by the collection:
 ```
 
 ### Teacher Workflow
+
 ```
 1. Register as Teacher
 2. Create Classroom
@@ -117,6 +132,7 @@ These are automatically set by the collection:
 ```
 
 ### Admin Workflow
+
 ```
 1. Register as Admin
 2. Create Template (PROJECT/ASSESSMENT/RUBRIC)
@@ -127,12 +143,15 @@ These are automatically set by the collection:
 ## 🔐 Authentication
 
 Most endpoints require JWT authentication:
+
 - Token is auto-extracted from registration/login responses
 - Stored in collection variables
 - Automatically added to requests via Bearer token auth
 
 ### Manual Token Setup
+
 If tokens aren't auto-saved:
+
 1. Copy token from login/register response
 2. Set collection variable `auth_token`
 3. Or set role-specific tokens: `teacher_token`, `student_token`, `admin_token`
@@ -140,6 +159,7 @@ If tokens aren't auto-saved:
 ## 🧪 Testing Scenarios
 
 ### Scenario 1: New Student Journey
+
 1. Register student
 2. Join classroom
 3. Submit assessment
@@ -148,12 +168,14 @@ If tokens aren't auto-saved:
 6. Watch mastery improve
 
 ### Scenario 2: Mastery Tracking
+
 1. Update mastery multiple times with different outcomes
 2. Check concept mastery after each update
 3. Verify module/subject mastery aggregation
 4. Get practice plan (should categorize concepts)
 
 ### Scenario 3: Engagement Tracking
+
 1. Log engagement data
 2. Get class engagement
 3. Check alerts (if engagement drops)
@@ -161,6 +183,7 @@ If tokens aren't auto-saved:
 ## 📊 Collection Organization
 
 The collection is organized by feature:
+
 - 🔐 Authentication
 - 🏫 Classroom Management
 - 📚 Curriculum Management
@@ -187,21 +210,25 @@ The collection is organized by feature:
 ## 🐛 Troubleshooting
 
 ### 401 Unauthorized
+
 - Check if token is set in collection variables
 - Re-login to get fresh token
 - Verify Bearer token is in request headers
 
 ### 404 Not Found
+
 - Verify IDs are saved in collection variables
 - Check if resource was created successfully
 - Ensure you're using correct endpoint path
 
 ### 500 Server Error
+
 - Check backend logs
 - Verify MongoDB is connected
 - Ensure Python backend is running (for mastery endpoints)
 
 ### Variables Not Updating
+
 - Manually check collection variables
 - Re-run the request that should set the variable
 - Check Postman console for variable assignment
@@ -209,12 +236,41 @@ The collection is organized by feature:
 ## 🔄 Updating the Collection
 
 To update the collection:
+
 1. Export current collection
 2. Make changes in JSON
 3. Re-import or use Postman's edit feature
+
+## 🔌 WebSocket Testing
+
+**Note:** Postman doesn't fully support Socket.IO WebSocket protocol. Use one of these methods:
+
+### Quick Method: Browser Console
+
+1. Open browser DevTools (F12)
+2. Load Socket.IO:
+   ```javascript
+   const s = document.createElement("script");
+   s.src = "https://cdn.socket.io/4.6.1/socket.io.min.js";
+   document.head.appendChild(s);
+   ```
+3. Connect and test (see `WEBSOCKET_TESTING_GUIDE.md` for full code)
+
+### Easy Method: HTML Test Page
+
+1. Open `backend/websocket-test.html` in your browser
+2. Enter your JWT token (from Postman collection variables)
+3. Click "Connect"
+4. Join a class room
+5. Watch for real-time events
+
+See `WEBSOCKET_TESTING_GUIDE.md` for complete WebSocket testing instructions.
+
+---
 
 ## 📚 Additional Resources
 
 - API Documentation: `API_CONTRACT.md`
 - Backend README: `README.md`
 - Implementation Summary: `IMPLEMENTATION_SUMMARY.md`
+- WebSocket Testing: `WEBSOCKET_TESTING_GUIDE.md`
