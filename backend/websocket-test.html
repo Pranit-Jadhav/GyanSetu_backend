@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GyanSetu WebSocket Test</title>
-  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <title>GyanSetu Classroom Socket Test</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     body { 
       font-family: Arial, sans-serif; 
@@ -94,7 +94,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>🔌 GyanSetu WebSocket Test Client</h1>
+    <h1>🔌 GyanSetu Classroom Socket Test Client</h1>
     
     <div class="section">
       <label>Connection Status: <span id="status" class="status disconnected">Disconnected</span></label>
@@ -102,21 +102,86 @@
     </div>
 
     <div class="section">
-      <label>JWT Token: <small>(Get from Postman after login/register)</small></label>
-      <input type="text" id="token" placeholder="Enter your JWT token (e.g., eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...)" />
+      <label>Mode</label>
+      <div style="display:flex; gap:12px; align-items:center; margin:6px 0;">
+        <label style="font-weight:normal;"><input type="radio" name="mode" value="teacher" checked /> Teacher/Admin</label>
+        <label style="font-weight:normal;"><input type="radio" name="mode" value="student" /> Student (Anonymous)</label>
+      </div>
+      <small style="color:#666;">Use Teacher token in Teacher mode, Student token in Student mode.</small>
+    </div>
+
+    <div class="section">
+      <label>JWT Token: <small>(From Postman login/register)</small></label>
+      <input type="text" id="token" placeholder="Paste JWT token here" />
       <small style="color: #666;">Token is stored in browser localStorage for convenience</small>
     </div>
     
     <div class="section">
-      <label>Class ID: <small>(Required for Teachers/Admin to join class room)</small></label>
-      <input type="text" id="classId" placeholder="Enter class ID to join (optional for students)" />
+      <label>Classroom & Session</label>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:260px;">
+          <label style="font-weight:normal;">Class ID (Teacher creates session)</label>
+          <input type="text" id="classId" placeholder="Class ID (Mongo _id) e.g. 65a..." />
+        </div>
+        <div style="flex:1; min-width:260px;">
+          <label style="font-weight:normal;">Topic (Teacher creates session)</label>
+          <input type="text" id="topic" placeholder="e.g., DFS Traversal" />
+        </div>
+        <div style="flex:1; min-width:260px;">
+          <label style="font-weight:normal;">Session ID (Students join)</label>
+          <input type="text" id="sessionId" placeholder="sess_xxxxxxxx" />
+          <small style="color:#666;">Session ID is returned in <code>SESSION_CREATED</code> and stored locally.</small>
+        </div>
+      </div>
     </div>
     
     <div class="section">
       <button onclick="connect()" id="connectBtn">Connect</button>
-      <button onclick="joinClass()" id="joinBtn" disabled>Join Class</button>
       <button onclick="disconnect()" id="disconnectBtn" disabled>Disconnect</button>
       <button onclick="clearMessages()">Clear Messages</button>
+    </div>
+
+    <div class="section">
+      <h3>Teacher/Admin Controls</h3>
+      <button onclick="createSession()" id="createSessionBtn" disabled>CREATE_SESSION</button>
+      <button onclick="launchPoll()" id="launchPollBtn" disabled>LAUNCH_POLL</button>
+      <button onclick="endSession()" id="endSessionBtn" disabled>END_SESSION</button>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;">
+        <div style="flex:1; min-width:260px;">
+          <label style="font-weight:normal;">Poll Question</label>
+          <input type="text" id="pollQuestion" placeholder="Is DFS recursive?" />
+        </div>
+        <div style="flex:1; min-width:260px;">
+          <label style="font-weight:normal;">Poll Options (comma-separated)</label>
+          <input type="text" id="pollOptions" placeholder="Yes, No" />
+        </div>
+      </div>
+      <small style="color:#666;">Teacher emits <code>CREATE_SESSION</code> then <code>LAUNCH_POLL</code>. Teacher receives <code>CONFUSION_UPDATE</code>, <code>ENGAGEMENT_UPDATE</code>, <code>POLL_RESULTS</code>.</small>
+    </div>
+
+    <div class="section">
+      <h3>Student Controls (Anonymous)</h3>
+      <button onclick="joinSession()" id="joinSessionBtn" disabled>JOIN_SESSION</button>
+      <button onclick="leaveSession()" id="leaveSessionBtn" disabled>LEAVE_SESSION</button>
+      <button onclick="sendConfusion()" id="confusionBtn" disabled>CONFUSION_SIGNAL</button>
+      <button onclick="sendEngagement()" id="engagementBtn" disabled>ENGAGEMENT_SIGNAL</button>
+      <button onclick="respondPoll(0)" id="pollYesBtn" disabled>POLL_RESPONSE (0)</button>
+      <button onclick="respondPoll(1)" id="pollNoBtn" disabled>POLL_RESPONSE (1)</button>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;">
+        <div style="flex:1; min-width:220px;">
+          <label style="font-weight:normal;">idleTime (sec)</label>
+          <input type="text" id="idleTime" value="12" />
+        </div>
+        <div style="flex:1; min-width:220px;">
+          <label style="font-weight:normal;">scrollSpeed (0..1)</label>
+          <input type="text" id="scrollSpeed" value="0.8" />
+        </div>
+        <div style="flex:1; min-width:220px;">
+          <label style="font-weight:normal;">tabFocus (0..100)</label>
+          <input type="text" id="tabFocus" value="92" />
+        </div>
+      </div>
+      <small style="color:#666;">Student joins via <code>JOIN_SESSION</code> and gets <code>anonymousId</code> in <code>JOINED_SESSION</code>. Then emits confusion/engagement/poll response.</small>
     </div>
     
     <div class="section">
@@ -132,13 +197,27 @@
     window.onload = () => {
       const savedToken = localStorage.getItem('gyansetu_token');
       const savedClassId = localStorage.getItem('gyansetu_classId');
+      const savedSessionId = localStorage.getItem('gyansetu_sessionId');
+      const savedMode = localStorage.getItem('gyansetu_mode');
       if (savedToken) {
         document.getElementById('token').value = savedToken;
       }
       if (savedClassId) {
         document.getElementById('classId').value = savedClassId;
       }
+      if (savedSessionId) {
+        document.getElementById('sessionId').value = savedSessionId;
+      }
+      if (savedMode) {
+        const el = document.querySelector(`input[name=\"mode\"][value=\"${savedMode}\"]`);
+        if (el) el.checked = true;
+      }
     };
+
+    function getMode() {
+      const checked = document.querySelector('input[name=\"mode\"]:checked');
+      return checked ? checked.value : 'teacher';
+    }
 
     function updateStatus(status, text) {
       const statusEl = document.getElementById('status');
@@ -180,9 +259,12 @@
       localStorage.setItem('gyansetu_token', token);
 
       updateStatus('connecting', 'Connecting...');
-      addMessage('🔄 Connecting to Socket.IO server at http://localhost:3001...', 'info');
+      const mode = getMode();
+      localStorage.setItem('gyansetu_mode', mode);
+
+      addMessage(`🔄 Connecting to Socket.IO namespace http://localhost:3001/classroom as ${mode}...`, 'info');
       
-      socket = io('http://localhost:3001', {
+      socket = io('http://localhost:3001/classroom', {
         auth: {
           token: token
         },
@@ -194,8 +276,19 @@
         updateSocketId(socket.id);
         addMessage(`✅ Successfully connected! Socket ID: ${socket.id}`, 'success');
         document.getElementById('connectBtn').disabled = true;
-        document.getElementById('joinBtn').disabled = false;
         document.getElementById('disconnectBtn').disabled = false;
+
+        // Enable relevant controls based on mode
+        const mode = getMode();
+        document.getElementById('createSessionBtn').disabled = mode !== 'teacher';
+        document.getElementById('launchPollBtn').disabled = mode !== 'teacher';
+        document.getElementById('endSessionBtn').disabled = mode !== 'teacher';
+        document.getElementById('joinSessionBtn').disabled = mode !== 'student';
+        document.getElementById('leaveSessionBtn').disabled = mode !== 'student';
+        document.getElementById('confusionBtn').disabled = mode !== 'student';
+        document.getElementById('engagementBtn').disabled = mode !== 'student';
+        document.getElementById('pollYesBtn').disabled = mode !== 'student';
+        document.getElementById('pollNoBtn').disabled = mode !== 'student';
       });
 
       socket.on('connect_error', (error) => {
@@ -211,60 +304,145 @@
         updateSocketId('');
         addMessage(`🔌 Disconnected from server. Reason: ${reason}`, 'info');
         document.getElementById('connectBtn').disabled = false;
-        document.getElementById('joinBtn').disabled = true;
         document.getElementById('disconnectBtn').disabled = true;
+        document.getElementById('createSessionBtn').disabled = true;
+        document.getElementById('launchPollBtn').disabled = true;
+        document.getElementById('endSessionBtn').disabled = true;
+        document.getElementById('joinSessionBtn').disabled = true;
+        document.getElementById('leaveSessionBtn').disabled = true;
+        document.getElementById('confusionBtn').disabled = true;
+        document.getElementById('engagementBtn').disabled = true;
+        document.getElementById('pollYesBtn').disabled = true;
+        document.getElementById('pollNoBtn').disabled = true;
       });
 
-      // Listen for all alert events
-      socket.on('CONFUSION_ALERT', (data) => {
-        addMessage({
-          event: 'CONFUSION_ALERT',
-          data: data
-        }, 'alert');
+      // --- LOCKED EVENTS ---
+      socket.on('SESSION_CREATED', (data) => {
+        addMessage({ event: 'SESSION_CREATED', data }, 'success');
+        if (data?.sessionId) {
+          document.getElementById('sessionId').value = data.sessionId;
+          localStorage.setItem('gyansetu_sessionId', data.sessionId);
+        }
       });
 
-      socket.on('ENGAGEMENT_DROP', (data) => {
-        addMessage({
-          event: 'ENGAGEMENT_DROP',
-          data: data
-        }, 'alert');
+      socket.on('JOINED_SESSION', (data) => {
+        addMessage({ event: 'JOINED_SESSION', data }, 'success');
       });
 
-      socket.on('MASTERY_THRESHOLD', (data) => {
-        addMessage({
-          event: 'MASTERY_THRESHOLD',
-          data: data
-        }, 'info');
+      socket.on('JOIN_SESSION_FAILED', (data) => {
+        addMessage({ event: 'JOIN_SESSION_FAILED', data }, 'error');
       });
 
-      socket.on('ALERT', (data) => {
-        addMessage({
-          event: 'ALERT',
-          data: data
-        }, 'alert');
+      socket.on('SESSION_STATS', (data) => {
+        addMessage({ event: 'SESSION_STATS', data }, 'info');
+      });
+
+      socket.on('CONFUSION_UPDATE', (data) => {
+        addMessage({ event: 'CONFUSION_UPDATE', data }, 'alert');
+      });
+
+      socket.on('ENGAGEMENT_UPDATE', (data) => {
+        addMessage({ event: 'ENGAGEMENT_UPDATE', data }, 'alert');
+      });
+
+      socket.on('POLL_LAUNCHED', (data) => {
+        addMessage({ event: 'POLL_LAUNCHED', data }, 'info');
+        if (data?.question) {
+          addMessage(`Poll: ${data.question} | options: ${(data.options || []).join(', ')}`, 'info');
+        }
+      });
+
+      socket.on('POLL_LAUNCHED_ACK', (data) => {
+        addMessage({ event: 'POLL_LAUNCHED_ACK', data }, 'success');
+      });
+
+      socket.on('POLL_RESULTS', (data) => {
+        addMessage({ event: 'POLL_RESULTS', data }, 'alert');
+      });
+
+      socket.on('SESSION_ENDED', (data) => {
+        addMessage({ event: 'SESSION_ENDED', data }, 'error');
       });
 
       // Save socket globally for debugging
       window.testSocket = socket;
     }
 
-    function joinClass() {
+    function createSession() {
+      if (!socket || !socket.connected) return alert('Please connect first');
       const classId = document.getElementById('classId').value.trim();
-      if (!socket || !socket.connected) {
-        alert('Please connect first');
-        return;
-      }
-      if (!classId) {
-        alert('Please enter a class ID');
-        return;
-      }
-      
-      // Save class ID to localStorage
+      const topic = document.getElementById('topic').value.trim() || 'Live Session';
+      if (!classId) return alert('Please enter Class ID');
+
       localStorage.setItem('gyansetu_classId', classId);
-      
-      socket.emit('join-class', classId);
-      addMessage(`📚 Emitted 'join-class' event with class ID: ${classId}`, 'success');
-      addMessage('💡 You should now receive alerts for this class. Try creating an alert via the API.', 'info');
+      socket.emit('CREATE_SESSION', { classId, topic });
+      addMessage(`📡 Emitted CREATE_SESSION { classId: ${classId}, topic: ${topic} }`, 'success');
+    }
+
+    function joinSession() {
+      if (!socket || !socket.connected) return alert('Please connect first');
+      const sessionId = document.getElementById('sessionId').value.trim();
+      if (!sessionId) return alert('Please enter Session ID');
+
+      localStorage.setItem('gyansetu_sessionId', sessionId);
+      socket.emit('JOIN_SESSION', { sessionId });
+      addMessage(`👤 Emitted JOIN_SESSION { sessionId: ${sessionId} }`, 'success');
+    }
+
+    function sendConfusion() {
+      if (!socket || !socket.connected) return alert('Please connect first');
+      socket.emit('CONFUSION_SIGNAL', { level: 1 });
+      addMessage('🤔 Emitted CONFUSION_SIGNAL { level: 1 }', 'alert');
+    }
+
+    function sendEngagement() {
+      if (!socket || !socket.connected) return alert('Please connect first');
+      const idleTime = Number(document.getElementById('idleTime').value || 0);
+      const scrollSpeed = Number(document.getElementById('scrollSpeed').value || 0);
+      const tabFocus = Number(document.getElementById('tabFocus').value || 100);
+      socket.emit('ENGAGEMENT_SIGNAL', { idleTime, scrollSpeed, tabFocus });
+      addMessage(`📈 Emitted ENGAGEMENT_SIGNAL ${JSON.stringify({ idleTime, scrollSpeed, tabFocus })}`, 'info');
+    }
+
+    function launchPoll() {
+      if (!socket || !socket.connected) return alert('Please connect first');
+      const sessionId = document.getElementById('sessionId').value.trim();
+      if (!sessionId) return alert('Please enter Session ID (from SESSION_CREATED)');
+
+      const question = document.getElementById('pollQuestion').value.trim();
+      const options = document.getElementById('pollOptions').value.split(',').map(s => s.trim()).filter(Boolean);
+      if (!question) return alert('Enter poll question');
+      if (options.length < 2) return alert('Enter at least 2 options (comma-separated)');
+
+      socket.emit('LAUNCH_POLL', { sessionId, question, options });
+      addMessage(`🗳️ Emitted LAUNCH_POLL ${JSON.stringify({ sessionId, question, options })}`, 'success');
+    }
+
+    function endSession() {
+      if (!socket || !socket.connected) return alert('Please connect first');
+      const sessionId = document.getElementById('sessionId').value.trim();
+      if (!sessionId) return alert('Please enter Session ID');
+
+      socket.emit('END_SESSION', { sessionId });
+      addMessage(`🏁 Emitted END_SESSION { sessionId: ${sessionId} }`, 'success');
+    }
+
+    function leaveSession() {
+      if (!socket || !socket.connected) return alert('Please connect first');
+      const sessionId = document.getElementById('sessionId').value.trim();
+      if (!sessionId) return alert('Please enter Session ID');
+
+      socket.emit('LEAVE_SESSION', { sessionId });
+      addMessage(`👋 Emitted LEAVE_SESSION { sessionId: ${sessionId} }`, 'info');
+    }
+
+    function respondPoll(optionIndex) {
+      if (!socket || !socket.connected) return alert('Please connect first');
+      // pollId is in POLL_LAUNCHED payload; we keep last seen in localStorage
+      const lastPoll = window.lastPoll || null;
+      if (!lastPoll?.pollId) return alert('No active poll received yet. Wait for POLL_LAUNCHED.');
+      socket.emit('POLL_RESPONSE', { pollId: lastPoll.pollId, optionIndex });
+      addMessage(`🗳️ Emitted POLL_RESPONSE { pollId: ${lastPoll.pollId}, optionIndex: ${optionIndex} }`, 'info');
     }
 
     function disconnect() {
@@ -275,13 +453,33 @@
         updateSocketId('');
         addMessage('🔌 Manually disconnected from server', 'info');
         document.getElementById('connectBtn').disabled = false;
-        document.getElementById('joinBtn').disabled = true;
         document.getElementById('disconnectBtn').disabled = true;
+        document.getElementById('createSessionBtn').disabled = true;
+        document.getElementById('launchPollBtn').disabled = true;
+        document.getElementById('endSessionBtn').disabled = true;
+        document.getElementById('joinSessionBtn').disabled = true;
+        document.getElementById('leaveSessionBtn').disabled = true;
+        document.getElementById('confusionBtn').disabled = true;
+        document.getElementById('engagementBtn').disabled = true;
+        document.getElementById('pollYesBtn').disabled = true;
+        document.getElementById('pollNoBtn').disabled = true;
       }
     }
 
     // Helper: Format JSON in messages
     window.formatJSON = (obj) => JSON.stringify(obj, null, 2);
+
+    // Track latest poll for student responses
+    window.lastPoll = null;
+    const _addMessageOriginal = addMessage;
+    addMessage = function(message, type = 'info') {
+      try {
+        if (message && message.event === 'POLL_LAUNCHED' && message.data && message.data.pollId) {
+          window.lastPoll = message.data;
+        }
+      } catch (e) {}
+      return _addMessageOriginal(message, type);
+    };
   </script>
 </body>
 </html>

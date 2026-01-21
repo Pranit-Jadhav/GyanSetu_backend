@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./utils/database";
 // import { connectRedis } from "./utils/redis"; // Redis disabled for now
 import { errorHandler } from "./middlewares/errorHandler";
+import path from "path";
 
 // Routes
 import authRoutes from "./modules/auth/auth.routes";
@@ -48,6 +49,12 @@ app.use(express.urlencoded({ extended: true }));
 // Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// WebSocket test page (static HTML)
+app.get("/websocket-test.html", (req, res) => {
+  // Serve from backend/ directory (works in dev and prod)
+  res.sendFile(path.join(process.cwd(), "websocket-test.html"));
 });
 
 // API Routes
