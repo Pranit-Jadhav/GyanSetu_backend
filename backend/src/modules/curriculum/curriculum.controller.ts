@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { CurriculumService } from './curriculum.service';
+import { AuthRequest } from '../../middlewares/auth';
 
 export class CurriculumController {
   private curriculumService: CurriculumService;
@@ -98,6 +99,16 @@ export class CurriculumController {
     }
   };
 
+  getConceptsBySubject = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { subjectId } = req.params;
+      const concepts = await this.curriculumService.getConceptsBySubject(subjectId);
+      res.json({ concepts });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getConceptsByModule = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { moduleId } = req.params;
@@ -113,6 +124,16 @@ export class CurriculumController {
       const { subjectId } = req.params;
       const curriculum = await this.curriculumService.getFullCurriculum(subjectId);
       res.json(curriculum);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getAvailableSubjects = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const studentId = req.user!.userId;
+      const subjects = await this.curriculumService.getAvailableSubjects(studentId);
+      res.json({ subjects });
     } catch (error) {
       next(error);
     }

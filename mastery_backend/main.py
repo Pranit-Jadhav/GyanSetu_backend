@@ -8,23 +8,13 @@ app = FastAPI(title="GyanSetu Mastery Engine")
 
 engine = MasteryEngine()
 
-# ------------------ MOCK DATABASES ------------------
+# ------------------ DATABASES ------------------
+# These will be populated dynamically from the Node.js backend
 
 STUDENTS = {}
 SUBJECTS = {}
 MODULES = {}
 CONCEPTS = {}
-
-# ------------------ SAMPLE CURRICULUM ------------------
-
-SUBJECTS["DSA"] = Subject("DSA", "Data Structures", ["ARRAYS", "TREES"])
-
-MODULES["ARRAYS"] = Module("ARRAYS", "Arrays", "DSA", ["BS"])
-MODULES["TREES"] = Module("TREES", "Trees", "DSA", ["DFS", "BFS"])
-
-CONCEPTS["BS"] = Concept("BS", "Binary Search", "ARRAYS", "DSA", [])
-CONCEPTS["DFS"] = Concept("DFS", "Depth First Search", "TREES", "DSA", [])
-CONCEPTS["BFS"] = Concept("BFS", "Breadth First Search", "TREES", "DSA", [])
 
 # ------------------ API SCHEMAS ------------------
 
@@ -34,10 +24,87 @@ class UpdateRequest(BaseModel):
     correct: bool
     engagement: float = 1.0
 
+class SubjectRequest(BaseModel):
+    subject_id: str
+    name: str
+    modules: list[str] = []
+
+class ModuleRequest(BaseModel):
+    module_id: str
+    name: str
+    subject_id: str
+    concepts: list[str] = []
+
+class ConceptRequest(BaseModel):
+    concept_id: str
+    name: str
+    module_id: str
+    subject_id: str
+    prerequisites: list[str] = []
+
 # ------------------ API ENDPOINTS ------------------
 @app.get("/")
 def root():
     return {"message": "GyanSetu Mastery Backend"}
+
+# ------------------ CURRICULUM MANAGEMENT ENDPOINTS ------------------
+@app.post("/curriculum/subject")
+def create_subject(req: SubjectRequest):
+    subject = Subject(req.subject_id, req.name, req.modules)
+    SUBJECTS[req.subject_id] = subject
+    return {"status": "created", "subject": req.subject_id}
+
+@app.post("/curriculum/module")
+def create_module(req: ModuleRequest):
+    module = Module(req.module_id, req.name, req.subject_id, req.concepts)
+    MODULES[req.module_id] = module
+    return {"status": "created", "module": req.module_id}
+
+@app.post("/curriculum/concept")
+def create_concept(req: ConceptRequest):
+    concept = Concept(req.concept_id, req.name, req.module_id, req.subject_id, req.prerequisites)
+    CONCEPTS[req.concept_id] = concept
+    return {"status": "created", "concept": req.concept_id}
+
+@app.get("/curriculum/subjects")
+def get_subjects():
+    return {"subjects": list(SUBJECTS.keys())}
+
+@app.get("/curriculum/subject/{subject_id}")
+def get_subject(subject_id: str):
+    subject = SUBJECTS.get(subject_id)
+    if not subject:
+        return {"error": "Subject not found"}
+    return {
+        "subject_id": subject.subject_id,
+        "name": subject.name,
+        "modules": subject.modules
+    }
+
+@app.get("/curriculum/module/{module_id}")
+def get_module(module_id: str):
+    module = MODULES.get(module_id)
+    if not module:
+        return {"error": "Module not found"}
+    return {
+        "module_id": module.module_id,
+        "name": module.name,
+        "subject_id": module.subject_id,
+        "concepts": module.concepts
+    }
+
+@app.get("/curriculum/concept/{concept_id}")
+def get_concept(concept_id: str):
+    concept = CONCEPTS.get(concept_id)
+    if not concept:
+        return {"error": "Concept not found"}
+    return {
+        "concept_id": concept.concept_id,
+        "name": concept.name,
+        "module_id": concept.module_id,
+        "subject_id": concept.subject_id,
+        "prerequisites": concept.prerequisites
+    }
 
 @app.post("/mastery/update")
 def update_mastery(req: UpdateRequest):

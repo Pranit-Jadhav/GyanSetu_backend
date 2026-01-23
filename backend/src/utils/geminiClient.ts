@@ -12,13 +12,15 @@ interface GenerateAssessmentParams {
   topic: string;
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   questionCount: number;
-  conceptName: string;
+  subjectConcepts?: string[];
+  conceptName?: string; // Keep for backward compatibility
 }
 
 interface GeneratedQuestion {
   question: string;
   options: string[];
   correctAnswer: number;
+  conceptId?: string;
 }
 
 export class GeminiClient {
@@ -30,11 +32,19 @@ export class GeminiClient {
       throw new Error('Gemini API key not configured');
     }
 
-    const { topic, difficulty, questionCount, conceptName } = params;
+    const { topic, difficulty, questionCount, subjectConcepts, conceptName } = params;
 
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
-    const prompt = `Generate ${questionCount} multiple-choice questions on the topic "${topic}" related to the concept "${conceptName}".
+    const conceptsText = subjectConcepts && subjectConcepts.length > 0
+      ? `Available concepts in this subject: ${subjectConcepts.join(', ')}`
+      : conceptName
+        ? `Related to concept: ${conceptName}`
+        : '';
+
+    const prompt = `Generate ${questionCount} multiple-choice questions on the topic "${topic}".
+
+${conceptsText}
 
 Difficulty level: ${difficulty}
 
@@ -45,15 +55,17 @@ Requirements:
 - For EASY: Focus on basic concepts and definitions
 - For MEDIUM: Focus on application and analysis
 - For HARD: Focus on synthesis and evaluation
+- If possible, specify which concept each question relates to
 
 Format your response as a JSON array. Each question should be an object with this exact structure:
 {
   "question": "The question text here",
   "options": ["Option A", "Option B", "Option C", "Option D"],
-  "correctAnswer": 0
+  "correctAnswer": 0,
+  "conceptId": "optional_concept_name"
 }
 
-Where correctAnswer is the index (0-3) of the correct option.
+Where correctAnswer is the index (0-3) of the correct option, and conceptId is optional.
 
 Return ONLY the JSON array, no other text.`;
 

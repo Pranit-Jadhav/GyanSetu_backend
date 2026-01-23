@@ -121,4 +121,37 @@ export class ClassroomService {
       role: student.role
     }));
   }
+
+  async getTeacherClasses(teacherId: string) {
+    const classes = await Class.find({ teacherId: new mongoose.Types.ObjectId(teacherId) })
+      .populate('students', 'name email')
+      .sort({ createdAt: -1 });
+
+    return classes.map(classData => ({
+      _id: classData._id.toString(),
+      name: classData.name,
+      academicYear: classData.academicYear,
+      course: classData.course,
+      joinCode: classData.joinCode,
+      students: classData.students.length,
+      createdAt: classData.createdAt
+    }));
+  }
+
+  async getStudentClasses(studentId: string) {
+    const classes = await Class.find({
+      students: new mongoose.Types.ObjectId(studentId)
+    })
+      .populate('teacherId', 'name email')
+      .sort({ createdAt: -1 });
+
+    return classes.map(classData => ({
+      _id: classData._id.toString(),
+      name: classData.name,
+      academicYear: classData.academicYear,
+      course: classData.course,
+      teacher: classData.teacherId,
+      createdAt: classData.createdAt
+    }));
+  }
 }

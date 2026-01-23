@@ -1,6 +1,8 @@
 import { Subject } from '../../models/Subject';
 import { Module } from '../../models/Module';
 import { Concept } from '../../models/Concept';
+import { Class } from '../../models/Class';
+import { User } from '../../models/User';
 import { AppError } from '../../middlewares/errorHandler';
 import mongoose from 'mongoose';
 
@@ -124,6 +126,12 @@ export class CurriculumService {
     return concept;
   }
 
+  async getConceptsBySubject(subjectId: string) {
+    return await Concept.find({ subjectId: new mongoose.Types.ObjectId(subjectId) })
+      .populate('moduleId', 'name code')
+      .sort({ name: 1 });
+  }
+
   async getConceptsByModule(moduleId: string) {
     return await Concept.find({ moduleId: new mongoose.Types.ObjectId(moduleId) })
       .populate('prerequisites', 'name code')
@@ -152,5 +160,52 @@ export class CurriculumService {
       subject: subject.toObject(),
       modules: modulesWithConcepts
     };
+  }
+
+  async getAvailableSubjects(studentId: string) {
+    // Get all subjects
+    const subjects = await Subject.find().sort({ name: 1 });
+
+    // For each subject, find classrooms and check if student has joined
+    const subjectsWithClassrooms = await Promise.all(
+      subjects.map(async (subject) => {
+        // Find all classrooms for this subject (by course name matching or we need to add subjectId to Class model)
+        // For now, we'll find classrooms and assume they might be related to subjects
+        // TODO: Consider adding subjectId to Class model for better relationship
+        const classrooms = await Class.find()
+          .populate('teacherId', 'name email')
+          .sort({ createdAt: -1 });
+
+        // Filter classrooms and check join status
+        const classroomsWithStatus = await Promise.all(
+          classrooms.map(async (classroom) => {
+            const isJoined = classroom.students.includes(new mongoose.Types.ObjectId(studentId));
+            const studentCount = classroom.students.length;
+
+            return {
+              _id: classroom._id,
+              name: classroom.name,
+              academicYear: classroom.academicYear,
+              course: classroom.course,
+              joinCode: classroom.joinCode,
+              teacherId: classroom.teacherId,
+              students: classroom.students,
+              studentCount,
+              isJoined,
+              createdAt: classroom.createdAt
+            };
+          })
+        );
+
+        return {
+          _id: subject._id,
+          name: subject.name,
+          code: subject.code,
+          classrooms: classroomsWithStatus
+        };
+      })
+    );
+
+    return subjectsWithClassrooms;
   }
 }

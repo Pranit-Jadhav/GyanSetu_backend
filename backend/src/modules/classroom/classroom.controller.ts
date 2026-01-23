@@ -49,8 +49,17 @@ export class ClassroomController {
   joinClass = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
+      const { classroomId } = req.body;
       const studentId = req.user!.userId;
-      const result = await this.classroomService.joinClass(id, studentId);
+
+      // Support both route param and body param for classroomId
+      const targetClassroomId = id || classroomId;
+
+      if (!targetClassroomId) {
+        return res.status(400).json({ message: 'Classroom ID is required' });
+      }
+
+      const result = await this.classroomService.joinClass(targetClassroomId, studentId);
       res.json(result);
     } catch (error) {
       next(error);
@@ -62,6 +71,26 @@ export class ClassroomController {
       const { id } = req.params;
       const students = await this.classroomService.getStudents(id);
       res.json({ students });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getUserClasses = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      const userRole = req.user!.role;
+
+      let classrooms;
+      if (userRole === 'TEACHER' || userRole === 'ADMIN') {
+        classrooms = await this.classroomService.getTeacherClasses(userId);
+      } else if (userRole === 'STUDENT') {
+        classrooms = await this.classroomService.getStudentClasses(userId);
+      } else {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      res.json({ classrooms });
     } catch (error) {
       next(error);
     }

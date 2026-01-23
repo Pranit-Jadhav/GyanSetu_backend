@@ -48,10 +48,14 @@ router.get('/modules/:id', authenticate, curriculumController.getModule);
 
 // Concept routes
 router.post('/concepts', authenticate, authorize('ADMIN', 'TEACHER'), validate(createConceptSchema), curriculumController.createConcept);
+router.get('/concepts/subject/:subjectId', authenticate, curriculumController.getConceptsBySubject);
 router.get('/concepts/module/:moduleId', authenticate, curriculumController.getConceptsByModule);
 router.get('/concepts/:id', authenticate, curriculumController.getConcept);
 
 // Full curriculum
 router.get('/subjects/:subjectId/full', authenticate, curriculumController.getFullCurriculum);
+
+// Available subjects for students
+router.get('/subjects/available', authenticate, authorize('STUDENT'), curriculumController.getAvailableSubjects);
 
 export default router;

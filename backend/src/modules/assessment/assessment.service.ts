@@ -11,29 +11,26 @@ import mongoose from 'mongoose';
 interface CreateManualAssessmentInput {
   title: string;
   description?: string;
-  classId: string;
+  classroomId: string;
   subjectId: string;
+  duration?: number;
   questions: Array<{
     question: string;
     options: string[];
     correctAnswer: number;
-    conceptId: string;
-    points?: number;
+    conceptId?: string;
+    difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
   }>;
-  dueDate?: Date;
   createdBy: string;
 }
 
 interface GenerateAIAssessmentInput {
-  title: string;
-  description?: string;
-  classId: string;
-  subjectId: string;
   topic: string;
+  subjectId: string;
+  classroomId: string;
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   questionCount: number;
-  conceptId: string;
-  dueDate?: Date;
+  duration?: number;
   createdBy: string;
 }
 
@@ -56,19 +53,21 @@ export class AssessmentService {
   }
 
   async createManualAssessment(input: CreateManualAssessmentInput) {
-    const { title, description, classId, subjectId, questions, dueDate, createdBy } = input;
+    const { title, description, classroomId, subjectId, duration, questions, createdBy } = input;
 
-    // Validate class and subject
-    const classData = await Class.findById(classId);
-    if (!classData) {
-      throw new AppError('Class not found', 404);
+    // Validate classroom and subject
+    const classroom = await Class.findById(classroomId);
+    if (!classroom) {
+      throw new AppError('Classroom not found', 404);
     }
 
-    // Validate concepts
+    // Validate concepts (optional since conceptId is now optional)
     for (const q of questions) {
-      const concept = await Concept.findById(q.conceptId);
-      if (!concept) {
-        throw new AppError(`Concept ${q.conceptId} not found`, 404);
+      if (q.conceptId) {
+        const concept = await Concept.findById(q.conceptId);
+        if (!concept) {
+          throw new AppError(`Concept ${q.conceptId} not found`, 404);
+        }
       }
     }
 
@@ -77,60 +76,74 @@ export class AssessmentService {
       description,
       type: AssessmentType.MANUAL,
       status: AssessmentStatus.DRAFT,
-      classId: new mongoose.Types.ObjectId(classId),
+      classId: new mongoose.Types.ObjectId(classroomId),
       subjectId: new mongoose.Types.ObjectId(subjectId),
+      duration: duration || 30,
       questions: questions.map(q => ({
         question: q.question,
         options: q.options,
         correctAnswer: q.correctAnswer,
-        conceptId: new mongoose.Types.ObjectId(q.conceptId),
-        points: q.points || 1
+        conceptId: q.conceptId ? new mongoose.Types.ObjectId(q.conceptId) : undefined,
+        difficulty: q.difficulty || 'MEDIUM',
+        points: 1
       })),
-      createdBy: new mongoose.Types.ObjectId(createdBy),
-      dueDate
+      createdBy: new mongoose.Types.ObjectId(createdBy)
     });
 
     return assessment;
   }
 
   async generateAIAssessment(input: GenerateAIAssessmentInput) {
-    const { title, description, classId, subjectId, topic, difficulty, questionCount, conceptId, dueDate, createdBy } = input;
+    const { topic, subjectId, classroomId, difficulty, questionCount, duration, createdBy } = input;
 
-    // Validate class and concept
-    const classData = await Class.findById(classId);
-    if (!classData) {
-      throw new AppError('Class not found', 404);
+    // Validate classroom
+    const classroom = await Class.findById(classroomId);
+    if (!classroom) {
+      throw new AppError('Classroom not found', 404);
     }
 
-    const concept = await Concept.findById(conceptId);
-    if (!concept) {
-      throw new AppError('Concept not found', 404);
-    }
+    // Find concepts in the subject that might be related to the topic
+    const concepts = await Concept.find({ subjectId: new mongoose.Types.ObjectId(subjectId) });
 
     // Generate questions using Gemini
     const generatedQuestions = await GeminiClient.generateAssessment({
       topic,
       difficulty,
       questionCount,
-      conceptName: concept.name
+      subjectConcepts: concepts.map(c => c.name)
     });
+
+    // Create title from topic
+    const title = `${topic} Assessment`;
+
+    // Create a map of concept names to IDs for mapping
+    const conceptMap = new Map();
+    concepts.forEach(c => conceptMap.set(c.name.toLowerCase(), c._id));
 
     const assessment = await Assessment.create({
       title,
-      description,
+      description: `AI-generated assessment on ${topic}`,
       type: AssessmentType.AI_GENERATED,
       status: AssessmentStatus.DRAFT,
-      classId: new mongoose.Types.ObjectId(classId),
+      classId: new mongoose.Types.ObjectId(classroomId),
       subjectId: new mongoose.Types.ObjectId(subjectId),
-      questions: generatedQuestions.map(q => ({
-        question: q.question,
-        options: q.options,
-        correctAnswer: q.correctAnswer,
-        conceptId: new mongoose.Types.ObjectId(conceptId),
-        points: 1
-      })),
-      createdBy: new mongoose.Types.ObjectId(createdBy),
-      dueDate
+      duration: duration || 30,
+      questions: generatedQuestions.map(q => {
+        // Try to map concept name to concept ID
+        let conceptId = undefined;
+        if (q.conceptId) {
+          conceptId = conceptMap.get(q.conceptId.toLowerCase());
+        }
+        return {
+          question: q.question,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+          conceptId: conceptId,
+          difficulty: difficulty,
+          points: 1
+        };
+      }),
+      createdBy: new mongoose.Types.ObjectId(createdBy)
     });
 
     return assessment;
@@ -228,7 +241,8 @@ export class AssessmentService {
     const assessment = await Assessment.findById(assessmentId)
       .populate('classId', 'name')
       .populate('subjectId', 'name')
-      .populate('createdBy', 'name email');
+      .populate('createdBy', 'name email')
+      .populate('questions.conceptId', 'name code');
 
     if (!assessment) {
       throw new AppError('Assessment not found', 404);
@@ -241,9 +255,10 @@ export class AssessmentService {
 
     // If student, check if they're in the class
     if (userRole === 'STUDENT') {
-      const classData = await Class.findById(assessment.classId);
+      const classId = assessment.classId._id || assessment.classId;
+      const classData = await Class.findById(classId);
       const studentObjectId = new mongoose.Types.ObjectId(userId);
-      if (!classData?.students.includes(studentObjectId)) {
+      if (!classData?.students.some(s => s.equals(studentObjectId))) {
         throw new AppError('Not enrolled in this class', 403);
       }
     }
@@ -299,5 +314,63 @@ export class AssessmentService {
       .populate('assessmentId');
 
     return attempt;
+  }
+
+  async getTeacherAssessments(teacherId: string) {
+    const assessments = await Assessment.find({
+      createdBy: new mongoose.Types.ObjectId(teacherId)
+    })
+      .populate('classId', 'name course academicYear')
+      .populate('subjectId', 'name code')
+      .sort({ createdAt: -1 });
+
+    return assessments.map(assessment => ({
+      _id: assessment._id.toString(),
+      title: assessment.title,
+      description: assessment.description,
+      type: assessment.type,
+      status: assessment.status,
+      classroom: assessment.classId,
+      subject: assessment.subjectId,
+      questionCount: assessment.questions?.length || 0,
+      duration: assessment.duration || 30,
+      launchedAt: assessment.launchedAt,
+      createdAt: assessment.createdAt
+    }));
+  }
+
+  async getAssessmentsByClassroom(classroomId: string, studentId: string) {
+    const assessments = await Assessment.find({
+      classId: new mongoose.Types.ObjectId(classroomId),
+      status: AssessmentStatus.LAUNCHED
+    })
+      .populate('subjectId', 'name code')
+      .populate('createdBy', 'name')
+      .sort({ createdAt: -1 });
+
+    // Get attempt information for each assessment
+    const assessmentsWithAttempts = await Promise.all(
+      assessments.map(async (assessment) => {
+        const attempt = await Attempt.findOne({
+          assessmentId: assessment._id,
+          studentId: new mongoose.Types.ObjectId(studentId)
+        });
+
+        return {
+          _id: assessment._id.toString(),
+          title: assessment.title,
+          description: assessment.description,
+          subject: assessment.subjectId,
+          status: assessment.status,
+          type: assessment.type,
+          duration: assessment.duration || 30,
+          questionCount: assessment.questions?.length || 0,
+          isAttempted: !!attempt,
+          score: attempt?.percentage
+        };
+      })
+    );
+
+    return assessmentsWithAttempts;
   }
 }

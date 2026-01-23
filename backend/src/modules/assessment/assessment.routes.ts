@@ -11,30 +11,27 @@ const createManualSchema = z.object({
   body: z.object({
     title: z.string().min(1),
     description: z.string().optional(),
-    classId: z.string().min(1),
+    classroomId: z.string().min(1),
     subjectId: z.string().min(1),
+    duration: z.number().min(1).optional(),
     questions: z.array(z.object({
       question: z.string().min(1),
       options: z.array(z.string()).length(4),
       correctAnswer: z.number().min(0).max(3),
-      conceptId: z.string().min(1),
-      points: z.number().optional()
-    })),
-    dueDate: z.string().datetime().optional()
+      conceptId: z.string().optional(),
+      difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional()
+    }))
   })
 });
 
 const generateAISchema = z.object({
   body: z.object({
-    title: z.string().min(1),
-    description: z.string().optional(),
-    classId: z.string().min(1),
-    subjectId: z.string().min(1),
     topic: z.string().min(1),
+    subjectId: z.string().min(1),
+    classroomId: z.string().min(1),
     difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']),
-    questionCount: z.number().int().min(1).max(20),
-    conceptId: z.string().min(1),
-    dueDate: z.string().datetime().optional()
+    questionCount: z.number().int().min(1).max(50),
+    duration: z.number().min(1).optional()
   })
 });
 
@@ -49,6 +46,7 @@ const submitSchema = z.object({
   })
 });
 
+router.get('/teacher', authenticate, authorize('TEACHER', 'ADMIN'), assessmentController.getTeacherAssessments);
 router.post('/manual', authenticate, authorize('TEACHER', 'ADMIN'), validate(createManualSchema), assessmentController.createManual);
 router.post('/ai-generate', authenticate, authorize('TEACHER', 'ADMIN'), validate(generateAISchema), assessmentController.generateAI);
 router.post('/:id/launch', authenticate, authorize('TEACHER', 'ADMIN'), assessmentController.launch);
@@ -56,5 +54,6 @@ router.post('/:id/submit', authenticate, authorize('STUDENT'), validate(submitSc
 router.get('/:id', authenticate, assessmentController.getAssessment);
 router.get('/:id/results', authenticate, authorize('TEACHER', 'ADMIN'), assessmentController.getResults);
 router.get('/:id/attempt', authenticate, authorize('STUDENT'), assessmentController.getMyAttempt);
+router.get('/classroom/:classroomId', authenticate, assessmentController.getAssessmentsByClassroom);
 
 export default router;

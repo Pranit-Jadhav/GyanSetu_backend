@@ -15,7 +15,7 @@ export interface IQuestion extends Document {
   question: string;
   options: string[];
   correctAnswer: number; // index of correct option
-  conceptId: mongoose.Types.ObjectId;
+  conceptId?: mongoose.Types.ObjectId;
   points: number;
 }
 
@@ -23,7 +23,7 @@ const QuestionSchema = new Schema<IQuestion>({
   question: { type: String, required: true },
   options: [{ type: String, required: true }],
   correctAnswer: { type: Number, required: true, min: 0 },
-  conceptId: { type: Schema.Types.ObjectId, ref: 'Concept', required: true },
+  conceptId: { type: Schema.Types.ObjectId, ref: 'Concept' },
   points: { type: Number, default: 1 }
 }, { _id: true });
 

@@ -21,6 +21,7 @@ const joinClassByCodeSchema = z.object({
   })
 });
 
+router.get('/', authenticate, classroomController.getUserClasses);
 router.post('/', authenticate, authorize('TEACHER', 'ADMIN'), validate(createClassSchema), classroomController.createClass);
 router.get('/:id', authenticate, classroomController.getClass);
 router.post('/join', authenticate, authorize('STUDENT'), validate(joinClassByCodeSchema), classroomController.joinClassByCode);

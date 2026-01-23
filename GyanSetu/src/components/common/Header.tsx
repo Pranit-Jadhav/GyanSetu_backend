@@ -50,10 +50,34 @@ const Header = ({
       roles: ['teacher', 'admin'],
     },
     {
+      label: 'Classroom Management',
+      href: '/teacher/classroom-management',
+      icon: 'BookOpenIcon',
+      roles: ['teacher', 'admin'],
+    },
+    {
+      label: 'Create Assessment',
+      href: '/teacher/assessment-creation',
+      icon: 'DocumentTextIcon',
+      roles: ['teacher', 'admin'],
+    },
+    {
       label: 'Analytics Dashboard',
       href: '/teacher-analytics-hub',
       icon: 'ChartBarIcon',
       roles: ['teacher', 'admin'],
+    },
+    {
+      label: 'Join Subjects',
+      href: '/student/subject-joining',
+      icon: 'UserPlusIcon',
+      roles: ['student'],
+    },
+    {
+      label: 'My Curriculum',
+      href: '/student/curriculum',
+      icon: 'BookOpenIcon',
+      roles: ['student'],
     },
     {
       label: 'Student Portal',

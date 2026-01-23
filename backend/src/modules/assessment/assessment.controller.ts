@@ -67,7 +67,7 @@ export class AssessmentController {
       const userId = req.user!.userId;
       const userRole = req.user!.role;
       const assessment = await this.assessmentService.getAssessment(id, userId, userRole);
-      res.json(assessment);
+      res.json({ assessment });
     } catch (error) {
       next(error);
     }
@@ -90,6 +90,27 @@ export class AssessmentController {
       const studentId = req.user!.userId;
       const attempt = await this.assessmentService.getStudentAttempt(id, studentId);
       res.json(attempt || {});
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getTeacherAssessments = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const teacherId = req.user!.userId;
+      const assessments = await this.assessmentService.getTeacherAssessments(teacherId);
+      res.json({ assessments });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getAssessmentsByClassroom = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { classroomId } = req.params;
+      const studentId = req.user!.userId;
+      const assessments = await this.assessmentService.getAssessmentsByClassroom(classroomId, studentId);
+      res.json({ assessments });
     } catch (error) {
       next(error);
     }
