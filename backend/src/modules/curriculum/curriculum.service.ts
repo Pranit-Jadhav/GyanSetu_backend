@@ -157,8 +157,10 @@ export class CurriculumService {
     );
 
     return {
-      subject: subject.toObject(),
-      modules: modulesWithConcepts
+      subject: {
+        ...subject.toObject(),
+        modules: modulesWithConcepts
+      }
     };
   }
 

@@ -97,6 +97,7 @@ const ClassroomManagementInteractive = () => {
     name: '',
     code: '',
     moduleId: '',
+    subjectId: '',
     difficulty: 'MEDIUM' as 'EASY' | 'MEDIUM' | 'HARD',
     description: ''
   });
@@ -136,8 +137,30 @@ const ClassroomManagementInteractive = () => {
         }
       });
       if (response.ok) {
-        const data = await response.json();
-        setSubjects(data.subjects || []);
+        const subjectsData = await response.json();
+        const subjects = subjectsData.subjects || [];
+
+        // For each subject, fetch the full curriculum data
+        const subjectsWithFullData = await Promise.all(
+          subjects.map(async (subject: any) => {
+            try {
+              const fullResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/curriculum/subjects/${subject._id}/full`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+              if (fullResponse.ok) {
+                const fullData = await fullResponse.json();
+                return fullData.subject;
+              }
+              return subject; // Fallback to basic subject data
+            } catch (error) {
+              return subject;
+            }
+          })
+        );
+
+        setSubjects(subjectsWithFullData);
       }
     } catch (error) {
       console.error('Failed to fetch subjects:', error);
@@ -290,13 +313,17 @@ const ClassroomManagementInteractive = () => {
           name: '',
           code: '',
           moduleId: '',
+          subjectId: '',
           difficulty: 'MEDIUM',
           description: ''
         });
         setShowCreateConcept(false);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(`Failed to create concept: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Failed to create concept:', error);
+      alert('Failed to create concept. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -437,6 +464,7 @@ const ClassroomManagementInteractive = () => {
             </div>
           </div>
 
+
           {/* Curriculum Hierarchy */}
           <div className="space-y-6">
             {subjects.length === 0 ? (
@@ -485,7 +513,16 @@ const ClassroomManagementInteractive = () => {
                             </div>
                             <button
                               onClick={() => {
-                                setConceptForm(prev => ({ ...prev, moduleId: module._id }));
+                                // Find the subject for this module
+                                let subjectId = '';
+                                for (const subject of subjects) {
+                                  if (subject.modules?.some(m => m._id === module._id)) {
+                                    subjectId = subject._id;
+                                    break;
+                                  }
+                                }
+
+                                setConceptForm(prev => ({ ...prev, moduleId: module._id, subjectId: subjectId || subjects[0]?._id || '' }));
                                 setShowCreateConcept(true);
                               }}
                               className="text-primary hover:text-primary/80 text-sm flex items-center gap-1"
@@ -819,7 +856,19 @@ const ClassroomManagementInteractive = () => {
                 <label className="block text-sm font-medium text-foreground mb-1">Module</label>
                 <select
                   value={conceptForm.moduleId}
-                  onChange={(e) => setConceptForm(prev => ({ ...prev, moduleId: e.target.value }))}
+                  onChange={(e) => {
+                    const moduleId = e.target.value;
+                    // Find the subject for this module
+                    let subjectId = '';
+                    for (const subject of subjects) {
+                      const module = subject.modules?.find(m => m._id === moduleId);
+                      if (module) {
+                        subjectId = subject._id;
+                        break;
+                      }
+                    }
+                    setConceptForm(prev => ({ ...prev, moduleId, subjectId }));
+                  }}
                   className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                 >
                   <option value="">Select a module</option>
