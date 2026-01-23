@@ -28,12 +28,14 @@ const PORT = process.env.PORT || 3001;
 
 // Security middleware
 app.use(helmet());
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-    credentials: true,
-  })
-);
+// app.use(
+//   cors({
+//     origin: process.env.CORS_ORIGIN || "http://localhost:4028",
+//     credentials: true,
+//   })
+// );
+
+app.use(cors());
 
 // Rate limiting
 const limiter = rateLimit({
