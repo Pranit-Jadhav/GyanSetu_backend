@@ -2,16 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { MasteryService } from './mastery.service';
 
 export class MasteryController {
-  private masteryService: MasteryService;
-
-  constructor() {
-    this.masteryService = new MasteryService();
-  }
-
+  
   getStudentMastery = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { studentId } = req.params;
-      const mastery = await this.masteryService.getStudentMastery(studentId);
+      const mastery = await MasteryService.getStudentMastery(studentId);
       res.json(mastery);
     } catch (error) {
       next(error);
@@ -21,7 +16,7 @@ export class MasteryController {
   getConceptMastery = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { studentId, conceptId } = req.params;
-      const result = await this.masteryService.getConceptMastery(studentId, conceptId);
+      const result = await MasteryService.getConceptMastery(studentId, conceptId);
       res.json(result);
     } catch (error) {
       next(error);
@@ -31,7 +26,7 @@ export class MasteryController {
   getModuleMastery = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { studentId, moduleId } = req.params;
-      const result = await this.masteryService.getModuleMastery(studentId, moduleId);
+      const result = await MasteryService.getModuleMastery(studentId, moduleId);
       res.json(result);
     } catch (error) {
       next(error);
@@ -41,7 +36,18 @@ export class MasteryController {
   getSubjectMastery = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { studentId, subjectId } = req.params;
-      const result = await this.masteryService.getSubjectMastery(studentId, subjectId);
+      const result = await MasteryService.getSubjectMastery(studentId, subjectId);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  submitAssessment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { studentId, attempts } = req.body;
+      // attempts: [{ conceptId, correct, engagement }]
+      const result = await MasteryService.processAssessmentAttempts(studentId, attempts);
       res.json(result);
     } catch (error) {
       next(error);
@@ -49,35 +55,21 @@ export class MasteryController {
   };
 
   getPracticePlan = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { studentId, subjectId } = req.params;
-      const result = await this.masteryService.getPracticePlan(studentId, subjectId);
-      res.json(result);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  updateMastery = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { studentId, conceptId, correct, engagement } = req.body;
-      const result = await this.masteryService.updateMastery({
-        studentId,
-        conceptId,
-        correct: Boolean(correct),
-        engagement: engagement ? Number(engagement) : 1.0
-      });
-      res.json(result);
-    } catch (error) {
-      next(error);
-    }
+     try {
+       const { studentId, subjectId } = req.params;
+       // Placeholder - can be improved to call Python engine or use local logic
+       const result = await MasteryService.getPracticePlan(studentId, subjectId);
+       res.json(result);
+     } catch (error) {
+       next(error);
+     }
   };
 
   getAtRiskStudents = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { threshold } = req.query;
       const thresholdNum = threshold ? parseFloat(threshold as string) : 50;
-      const students = await this.masteryService.getAtRiskStudents(thresholdNum);
+      const students = await MasteryService.getAtRiskStudents(thresholdNum);
       res.json({ students });
     } catch (error) {
       next(error);

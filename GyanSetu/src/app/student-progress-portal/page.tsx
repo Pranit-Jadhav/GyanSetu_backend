@@ -28,7 +28,7 @@ export default function StudentProgressPortalPage() {
           const data = await response.json();
           setMasteryData(data);
         } else {
-          console.log('API not available, using mock data');
+          console.log('Mastery API not available, using mock data');
         }
       } catch (err) {
         console.log('Error fetching mastery data, using mock data:', err);

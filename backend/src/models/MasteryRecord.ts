@@ -5,9 +5,12 @@ export interface IMasteryRecord extends Document {
   conceptId: mongoose.Types.ObjectId;
   masteryScore: number; // 0-100
   confidence: number; // 0-1
+  status: 'Not Ready' | 'Developing' | 'Proficient' | 'Mastered';
   lastUpdated: Date;
   assessmentHistory: Array<{
     quizScore: number;
+    addedMastery?: number;
+    explanation?: string;
     timestamp: Date;
   }>;
   createdAt: Date;
@@ -20,9 +23,16 @@ const MasteryRecordSchema = new Schema<IMasteryRecord>(
     conceptId: { type: Schema.Types.ObjectId, ref: 'Concept', required: true },
     masteryScore: { type: Number, required: true, min: 0, max: 100, default: 0 },
     confidence: { type: Number, required: true, min: 0, max: 1, default: 0 },
+    status: { 
+      type: String, 
+      enum: ['Not Ready', 'Developing', 'Proficient', 'Mastered'], 
+      default: 'Not Ready' 
+    },
     lastUpdated: { type: Date, default: Date.now },
     assessmentHistory: [{
       quizScore: { type: Number, required: true },
+      addedMastery: { type: Number }, // How much mastery changed
+      explanation: { type: String },
       timestamp: { type: Date, default: Date.now }
     }]
   },

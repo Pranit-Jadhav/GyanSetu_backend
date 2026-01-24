@@ -62,14 +62,16 @@ const StudentCurriculumView = ({ subjectId, classroomId }: StudentCurriculumView
   const [subject, setSubject] = useState<Subject | null>(null);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [masteryData, setMasteryData] = useState<Map<string, MasteryData>>(new Map());
+  const [practicePlan, setPracticePlan] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'curriculum' | 'assessments'>('curriculum');
+  const [activeTab, setActiveTab] = useState<'curriculum' | 'assessments' | 'practice'>('curriculum');
 
   useEffect(() => {
     setIsHydrated(true);
     fetchSubjectCurriculum();
     fetchAssessments();
     fetchMasteryData();
+    fetchPracticePlan();
   }, [subjectId, classroomId]);
 
   const fetchSubjectCurriculum = async () => {
@@ -142,32 +144,42 @@ const StudentCurriculumView = ({ subjectId, classroomId }: StudentCurriculumView
     }
   };
 
+  // New state for hierarchical mastery data
+  const [subjectMastery, setSubjectMastery] = useState<any>(null);
+
   const fetchMasteryData = async () => {
-    if (!token || !user) return;
+    if (!token || !user || !subjectId) return;
     try {
-      // Fetch mastery data for all concepts in the subject
-      const masteryPromises = subject?.modules?.flatMap(module =>
-        module.concepts?.map(concept =>
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mastery/concept/${user._id}/${concept._id}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          }).then(res => res.ok ? res.json() : null)
-        ) || []
-      ) || [];
-
-      const results = await Promise.all(masteryPromises);
-      const masteryMap = new Map<string, MasteryData>();
-
-      results.forEach(result => {
-        if (result) {
-          masteryMap.set(result.concept, result);
+      // Fetch aggregated subject mastery data
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mastery/subject/${user._id}/${subjectId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
       });
-
-      setMasteryData(masteryMap);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSubjectMastery(data);
+      }
     } catch (error) {
       console.error('Failed to fetch mastery data:', error);
+    }
+  };
+
+  const fetchPracticePlan = async () => {
+    if (!token || !user || !subjectId) return;
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mastery/practice/${user._id}/${subjectId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPracticePlan(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch practice plan:', error);
     }
   };
 
@@ -243,11 +255,41 @@ const StudentCurriculumView = ({ subjectId, classroomId }: StudentCurriculumView
         >
           Assessments ({assessments.length})
         </button>
+        <button
+          onClick={() => setActiveTab('practice')}
+          className={`px-6 py-3 font-medium transition-colors ${
+            activeTab === 'practice'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Practice Plan
+        </button>
       </div>
 
       {/* Curriculum Tab */}
       {activeTab === 'curriculum' && (
-        <div>
+        <div className="space-y-6">
+          {/* Subject Mastery Header */}
+          {subjectMastery && (
+             <div className="bg-gradient-to-r from-primary/10 to-transparent border border-primary/20 rounded-lg p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+               <div>
+                  <h2 className="text-xl font-bold text-foreground">Subject Mastery</h2>
+                  <p className="text-muted-foreground">Your overall progress in {subject?.name}</p>
+               </div>
+               <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-primary">{subjectMastery.mastery}%</div>
+                    <div className="text-sm font-medium text-primary/80">{subjectMastery.status}</div>
+                  </div>
+                  <div className="w-16 h-16 rounded-full border-4 border-primary/30 flex items-center justify-center relative">
+                    <div className="absolute inset-0 rounded-full border-4 border-primary" style={{ clipPath: `polygon(0 0, 100% 0, 100% ${subjectMastery.mastery}%, 0 ${subjectMastery.mastery}%)` }}></div>
+                    <Icon name="academic-cap" size={24} className="text-primary" />
+                  </div>
+               </div>
+             </div>
+          )}
+
           {subject?.modules?.length === 0 ? (
             <div className="text-center py-12">
               <Icon name="book-open" size={48} className="mx-auto text-muted-foreground mb-4" />
@@ -256,11 +298,30 @@ const StudentCurriculumView = ({ subjectId, classroomId }: StudentCurriculumView
             </div>
           ) : (
             <div className="space-y-8">
-              {subject?.modules?.map((module) => (
+              {subject?.modules?.map((module) => {
+                 // Find module mastery from the fetched data if available
+                 const moduleMastery = subjectMastery?.modules?.find((m: any) => m.moduleId === module._id);
+                 
+                 return (
                 <div key={module._id} className="bg-card border border-border rounded-lg p-6">
-                  <div className="mb-4">
-                    <h2 className="text-xl font-semibold text-foreground mb-2">{module.name}</h2>
-                    <p className="text-muted-foreground">Code: {module.code}</p>
+                  <div className="mb-4 flex justify-between items-start">
+                    <div>
+                      <h2 className="text-xl font-semibold text-foreground mb-2">{module.name}</h2>
+                      <p className="text-muted-foreground">Code: {module.code}</p>
+                    </div>
+                    {moduleMastery && (
+                      <div className="text-right">
+                         <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                            moduleMastery.status === 'Mastered' ? 'bg-green-100 text-green-800' :
+                            moduleMastery.status === 'Proficient' ? 'bg-blue-100 text-blue-800' :
+                            moduleMastery.status === 'Developing' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                         }`}>
+                           {moduleMastery.status}
+                         </span>
+                         <div className="text-sm font-bold mt-1 text-foreground">{moduleMastery.mastery}%</div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Concepts Grid */}
@@ -271,7 +332,9 @@ const StudentCurriculumView = ({ subjectId, classroomId }: StudentCurriculumView
                       </div>
                     ) : (
                       module.concepts?.map((concept) => {
-                        const mastery = masteryData.get(concept.name);
+                        // Find concept mastery from moduleMastery concepts list
+                        const conceptMastery = moduleMastery?.concepts?.find((c: any) => c.conceptId === concept._id);
+                        
                         return (
                           <div key={concept._id} className="bg-background border border-border rounded-lg p-4">
                             <div className="flex justify-between items-start mb-2">
@@ -293,7 +356,7 @@ const StudentCurriculumView = ({ subjectId, classroomId }: StudentCurriculumView
                             )}
 
                             {/* Mastery Status */}
-                            {mastery && (
+                            {conceptMastery ? (
                               <div className="mt-3 pt-3 border-t border-border">
                                 <div className="flex justify-between items-center text-sm">
                                   <span className="text-muted-foreground">Mastery:</span>
@@ -301,13 +364,20 @@ const StudentCurriculumView = ({ subjectId, classroomId }: StudentCurriculumView
                                     <div className="w-16 bg-muted rounded-full h-2">
                                       <div
                                         className="bg-primary h-2 rounded-full transition-all"
-                                        style={{ width: `${mastery.masteryScore}%` }}
+                                        style={{ width: `${conceptMastery.mastery}%` }}
                                       />
                                     </div>
-                                    <span className="font-medium">{mastery.masteryScore}%</span>
+                                    <span className="font-medium">{conceptMastery.mastery}%</span>
                                   </div>
                                 </div>
+                                <div className="mt-1 text-xs text-right text-muted-foreground">
+                                    Status: {conceptMastery.status}
+                                </div>
                               </div>
+                            ) : (
+                               <div className="mt-3 pt-3 border-t border-border">
+                                  <div className="text-xs text-center text-muted-foreground">Not Started</div>
+                               </div>
                             )}
                           </div>
                         );
@@ -315,7 +385,8 @@ const StudentCurriculumView = ({ subjectId, classroomId }: StudentCurriculumView
                     )}
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>
@@ -396,6 +467,76 @@ const StudentCurriculumView = ({ subjectId, classroomId }: StudentCurriculumView
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Practice Tab */}
+      {activeTab === 'practice' && (
+        <div>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-foreground mb-2">Personalized Practice Plan</h2>
+            <p className="text-muted-foreground">
+              Adaptive practice recommendations based on your current mastery levels.
+            </p>
+          </div>
+
+          {practicePlan?.plan ? (
+            <div className="space-y-4">
+              {practicePlan.plan.map((recommendation: any, index: number) => (
+                <div key={index} className="bg-card border border-border rounded-lg p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        {recommendation.module || 'Practice Module'}
+                      </h3>
+                      <p className="text-muted-foreground mb-3">
+                        Focus on concepts that need attention based on your learning progress.
+                      </p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="flex items-center gap-1">
+                          <Icon name="clock" size={14} />
+                          Estimated: {recommendation.estimated_time || 30} min
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          recommendation.priority === 'high' ? 'bg-red-100 text-red-800' :
+                          recommendation.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {recommendation.priority || 'medium'} priority
+                        </span>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        Start Practice
+                      </button>
+                    </div>
+                  </div>
+
+                  {recommendation.concepts && recommendation.concepts.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <h4 className="text-sm font-medium text-foreground mb-2">Recommended Concepts:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {recommendation.concepts.map((concept: string, idx: number) => (
+                          <span key={idx} className="bg-muted px-3 py-1 rounded-full text-sm">
+                            {concept}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Icon name="light-bulb" size={48} className="mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No practice recommendations yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Complete some assessments to get personalized practice recommendations.
+              </p>
             </div>
           )}
         </div>

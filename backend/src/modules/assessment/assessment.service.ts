@@ -46,10 +46,8 @@ interface SubmitAssessmentInput {
 }
 
 export class AssessmentService {
-  private masteryService: MasteryService;
-
   constructor() {
-    this.masteryService = new MasteryService();
+    
   }
 
   async createManualAssessment(input: CreateManualAssessmentInput) {
@@ -205,20 +203,33 @@ export class AssessmentService {
         score += question.points || 1;
       }
 
-      // Update mastery for each question answered
-      this.masteryService.updateMastery({
-        studentId,
-        conceptId: question.conceptId.toString(),
-        correct: isCorrect,
-        engagement: Math.max(0.5, Math.min(2.0, engagement))
-      }).catch(err => console.error('Mastery update error:', err));
-
       return {
         questionId: question._id,
         selectedOption,
         isCorrect
       };
     });
+
+    // Prepare attempts for batch processing
+    const attempts = detailedAnswers
+      .filter(a => a.isCorrect !== undefined && answerMap.has(a.questionId.toString()))
+      .map((answer, idx) => {
+         const question = assessment.questions.find(q => q._id.toString() === answer.questionId.toString());
+         if (!question || !question.conceptId) return null;
+         
+         return {
+           conceptId: question.conceptId.toString(),
+           correct: answer.isCorrect,
+           engagement: Math.max(0.5, Math.min(2.0, engagement))
+         };
+      })
+      .filter(a => a !== null) as Array<{conceptId: string, correct: boolean, engagement: number}>;
+
+    // Batch update mastery
+    if (attempts.length > 0) {
+      MasteryService.processAssessmentAttempts(studentId, attempts)
+        .catch(err => console.error('Mastery batch update error:', err));
+    }
 
     const percentage = (score / maxScore) * 100;
 

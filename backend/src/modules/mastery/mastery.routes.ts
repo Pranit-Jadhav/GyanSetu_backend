@@ -7,12 +7,14 @@ import { z } from 'zod';
 const router = Router();
 const masteryController = new MasteryController();
 
-const updateMasterySchema = z.object({
+const assessSchema = z.object({
   body: z.object({
     studentId: z.string().min(1),
-    conceptId: z.string().min(1),
-    correct: z.boolean(),
-    engagement: z.number().min(0).max(2).optional()
+    attempts: z.array(z.object({
+      conceptId: z.string().min(1),
+      correct: z.boolean(),
+      engagement: z.number().min(0).optional()
+    }))
   })
 });
 
@@ -23,8 +25,8 @@ router.get('/module/:studentId/:moduleId', authenticate, masteryController.getMo
 router.get('/subject/:studentId/:subjectId', authenticate, masteryController.getSubjectMastery);
 router.get('/practice/:studentId/:subjectId', authenticate, masteryController.getPracticePlan);
 
-// Update mastery
-router.post('/update', authenticate, validate(updateMasterySchema), masteryController.updateMastery);
+// Helper for single update backward compatibility if needed, or just redirect to assess
+router.post('/assess', authenticate, validate(assessSchema), masteryController.submitAssessment);
 
 // Analytics
 router.get('/at-risk', authenticate, masteryController.getAtRiskStudents);
