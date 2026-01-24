@@ -19,6 +19,7 @@ export class SocketHandler {
       topic: string;
       teacherSocketId: string;
       students: Set<string>; // socket.id set
+      studentInfos: Map<string, { id: string; name: string; email: string }>; // socket.id -> info
       anonBySocketId: Map<string, string>; // socket.id -> anonId
       confusionSignals: number;
       engagementSignals: Array<{ idleTime: number; scrollSpeed: number; tabFocus: number }>;
@@ -65,7 +66,7 @@ export class SocketHandler {
     });
 
     nsp.on('connection', (socket) => {
-      const user = (socket as unknown as { user: JWTPayload }).user as JWTPayload;
+      const user = (socket as unknown as { user: any }).user; // Type cast to any to access optional name
       console.log(`[socket] connected: ${user.email} (${user.role}) socket=${socket.id}`);
 
       // 1) Teacher creates live session
@@ -80,6 +81,7 @@ export class SocketHandler {
           topic: payload.topic || 'Untitled Session',
           teacherSocketId: socket.id,
           students: new Set<string>(),
+          studentInfos: new Map<string, { id: string; name: string; email: string }>(),
           anonBySocketId: new Map<string, string>(),
           confusionSignals: 0,
           engagementSignals: []
@@ -91,7 +93,7 @@ export class SocketHandler {
         socket.emit('SESSION_CREATED', { sessionId, classId: session.classId, topic: session.topic });
       });
 
-      // 2) Student joins session (anonymous)
+      // 2) Student joins session
       socket.on('JOIN_SESSION', (payload: { sessionId: string }) => {
         if (!payload?.sessionId) return;
         const session = this.sessions.get(payload.sessionId);
@@ -100,18 +102,28 @@ export class SocketHandler {
           return;
         }
 
-        // Assign anonymousId per session (teacher never sees real student id)
+        // Assign anonymousId per session
         const anonId = `anon_${Math.random().toString(36).slice(2, 6)}`;
         session.students.add(socket.id);
         session.anonBySocketId.set(socket.id, anonId);
+        
+        // Store student info
+        session.studentInfos.set(socket.id, {
+            id: user.userId,
+            name: user.name || user.email.split('@')[0], // Fallback to email prefix
+            email: user.email
+        });
 
         socket.join(`session:${session.sessionId}:students`);
         socket.emit('JOINED_SESSION', { anonymousId: anonId, sessionId: session.sessionId });
 
-        // Notify teacher about join count (no student identity)
+        // Notify teacher about join count and list
+        const studentList = Array.from(session.studentInfos.values());
+        
         nsp.to(`session:${session.sessionId}:teacher`).emit('SESSION_STATS', {
           sessionId: session.sessionId,
-          totalStudents: session.students.size
+          totalStudents: session.students.size,
+          students: studentList
         });
       });
 
@@ -239,9 +251,12 @@ export class SocketHandler {
         if (session.students.has(socket.id)) {
           session.students.delete(socket.id);
           session.anonBySocketId.delete(socket.id);
+          session.studentInfos.delete(socket.id);
+          
           nsp.to(`session:${session.sessionId}:teacher`).emit('SESSION_STATS', {
             sessionId: session.sessionId,
             totalStudents: session.students.size,
+            students: Array.from(session.studentInfos.values()),
             event: 'STUDENT_LEFT'
           });
         }
@@ -258,6 +273,8 @@ export class SocketHandler {
         if (!payload?.sessionId) return;
         const session = this.sessions.get(payload.sessionId);
         if (!session || session.teacherSocketId !== socket.id) return;
+        
+        const finalStudentList = Array.from(session.studentInfos.values());
 
         // Notify all students that session ended
         nsp.to(`session:${session.sessionId}:students`).emit('SESSION_ENDED', {
@@ -270,7 +287,8 @@ export class SocketHandler {
 
         nsp.to(socket.id).emit('SESSION_ENDED_CONFIRM', {
           sessionId: session.sessionId,
-          message: 'Session ended successfully'
+          message: 'Session ended successfully',
+          students: finalStudentList
         });
       });
 
@@ -287,9 +305,12 @@ export class SocketHandler {
           if (session.students.has(socket.id)) {
             session.students.delete(socket.id);
             session.anonBySocketId.delete(socket.id);
+            session.studentInfos.delete(socket.id);
+            
             nsp.to(`session:${session.sessionId}:teacher`).emit('SESSION_STATS', {
               sessionId: session.sessionId,
-              totalStudents: session.students.size
+              totalStudents: session.students.size,
+              students: Array.from(session.studentInfos.values())
             });
           }
         }

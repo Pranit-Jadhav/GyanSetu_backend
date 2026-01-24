@@ -145,13 +145,22 @@ const SubjectJoiningInteractive = () => {
               Discover available subjects and join classrooms to start learning.
             </p>
           </div>
-          <button
-            onClick={() => setShowJoinModal(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2"
-          >
-            <Icon name="plus" size={16} />
-            Join by Code
-          </button>
+          <div className="flex gap-4">
+            <a
+              href="/student/live-session"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2"
+            >
+              <Icon name="status-online" size={16} />
+              Live Session
+            </a>
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2"
+            >
+              <Icon name="plus" size={16} />
+              Join by Code
+            </button>
+          </div>
         </div>
       </div>
 
