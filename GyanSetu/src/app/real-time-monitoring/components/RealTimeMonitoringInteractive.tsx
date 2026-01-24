@@ -20,6 +20,7 @@ interface Student {
   confusionLevel: 'low' | 'medium' | 'high';
   currentActivity: string;
   interventionStrategy: string;
+  warnings?: number;
 }
 
 interface QuickAction {
@@ -116,6 +117,25 @@ const RealTimeMonitoringInteractive = () => {
        setActivePollStats(data);
     });
 
+    // Listen for Student Warnings (Anti-Cheating)
+    socket.on('STUDENT_WARNING', (data: { studentId: string; studentName: string; warningCount: number }) => {
+       // Show alert (using native alert for now or you could use a toast library)
+       // For better UX, we'd use a toast, but sticking to console/alert or UI update
+       console.warn(`WARNING: ${data.studentName} switched tabs! (Count: ${data.warningCount})`);
+       
+       // Update student state
+       setStudents(prev => prev.map(s => {
+          if (s.id === data.studentId) {
+             return { ...s, warnings: data.warningCount };
+          }
+          return s;
+       }));
+       
+       // Add to Alerts Panel dynamically (optional, but good for persistence)
+       // This would require managing alerts state which is currently static mock in this file
+       // For now, we rely on the visual indicator in the student list (which we need to add)
+    });
+
     socket.on('CONFUSION_UPDATE', (data: { totalSignals: number; confusedPercentage: number }) => {
       console.log('Confusion update received:', data);
       setConfusionUpdate(data);
@@ -138,7 +158,7 @@ const RealTimeMonitoringInteractive = () => {
       console.log('Session created:', data);
       setCurrentSession({
         sessionId: data.sessionId,
-        classId: 'demo-class-123',
+        classId: '65f2d6549a09b8e123456789',
         topic: 'Real-time Monitoring Demo'
       });
       setSessionStatus('active');
@@ -161,7 +181,8 @@ const RealTimeMonitoringInteractive = () => {
                   confusionScore: existing?.confusionScore || 0,
                   confusionLevel: existing?.confusionLevel || 'low',
                   currentActivity: existing?.currentActivity || 'Active in Session',
-                  interventionStrategy: existing?.interventionStrategy || 'Monitor progress.'
+                  interventionStrategy: existing?.interventionStrategy || 'Monitor progress.',
+                  warnings: s.warnings || existing?.warnings || 0 // Map warnings
                };
             });
          });
@@ -179,7 +200,8 @@ const RealTimeMonitoringInteractive = () => {
         console.log('Session ended confirmation:', data);
         if (data.students && data.students.length > 0) {
            const names = data.students.map(s => s.name).join(', ');
-           alert(`Session Ended.\nFinal Participants (${data.students.length}):\n${names}`);
+           // Use a more subtle notification or just log
+           console.log(`Session Ended. Final Participants: ${names}`);
         }
         setCurrentSession(null);
         setSessionStatus('none');
@@ -197,7 +219,8 @@ const RealTimeMonitoringInteractive = () => {
       return;
     }
     setSessionStatus('creating');
-    socketRef.current.emit('CREATE_SESSION', { classId: 'demo-class-123', topic: 'Real-time Monitoring Demo' });
+    // Use a valid 24-char hex string for demo classId to satisfy MongoDB ObjectId requirements
+    socketRef.current.emit('CREATE_SESSION', { classId: '65f2d6549a09b8e123456789', topic: 'Real-time Monitoring Demo' });
   };
 
   const endSession = () => {

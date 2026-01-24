@@ -22,6 +22,7 @@ export default function StudentLiveInteractive() {
   const [activePoll, setActivePoll] = useState<Poll | null>(null);
   const [pollSubmitted, setPollSubmitted] = useState(false);
   const [confusionLevel, setConfusionLevel] = useState(0);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
   // Sync ref with state
   useEffect(() => {
@@ -70,18 +71,48 @@ export default function StudentLiveInteractive() {
        setPollSubmitted(false);
     });
     
-    // Auto-engagement simulation
+    // Listen for Warning Events
+    socket.on('WARNING_RECEIVED', (data: { count: number; message: string }) => {
+        console.log('Warning received:', data);
+        setWarningMessage(data.message);
+    });
+
+    // Listen for Force Disconnect (Anti-Cheating)
+    socket.on('FORCE_DISCONNECT', (data: any) => {
+        alert(`Session Terminated: ${data.reason}. Your attendance has been submitted.`);
+        setIsJoined(false);
+        setIsConnected(false); // Clean UI state
+        window.location.href = '/student/dashboard';
+    });
+
+    socket.on('LEFT_SESSION', (data: any) => {
+        setIsJoined(false);
+        // Optional: Show summary
+    });
+    
+    // Visibility Tracking (Tab Switching)
+    const handleVisibilityChange = () => {
+       if (document.hidden && isJoinedRef.current && socket.connected) {
+          console.log('Tab switched/hidden, emitting warning...');
+          socket.emit('TAB_SWITCH');
+       }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Auto-engagement simulation (Modified to respect visibility)
     const interval = setInterval(() => {
       if (isJoinedRef.current && socket.connected) {
          socket.emit('ENGAGEMENT_SIGNAL', {
             idleTime: 0,
             scrollSpeed: 0.5,
-            tabFocus: 100
+            tabFocus: document.hidden ? 0 : 100 // Real focus tracking
          });
       }
     }, 30000);
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       socket.disconnect();
       clearInterval(interval);
     };
@@ -111,8 +142,30 @@ export default function StudentLiveInteractive() {
 
   if (!isConnected) return <div className="text-muted-foreground p-4">Connecting to live server...</div>;
 
+  // No changes needed here, just cutting the duplicate tail
   return (
-    <div className="space-y-6 max-w-xl mx-auto">
+    <div className="space-y-6 max-w-xl mx-auto relative">
+       {/* Warning Modal/Banner */}
+       {warningMessage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+             <div className="bg-card border-2 border-error text-card-foreground p-6 rounded-lg shadow-2xl max-w-sm w-full animate-bounce-subtle">
+                <div className="flex flex-col items-center text-center gap-4">
+                   <div className="bg-error/20 p-3 rounded-full text-error">
+                      <Icon name="exclamation-triangle" size={32} />
+                   </div>
+                   <h3 className="text-xl font-bold text-error">Warning Received</h3>
+                   <p className="font-medium text-lg">{warningMessage}</p>
+                   <button 
+                     onClick={() => setWarningMessage(null)}
+                     className="bg-error text-error-foreground px-6 py-2 rounded-md font-semibold hover:bg-error/90 transition-colors"
+                   >
+                     I Understand
+                   </button>
+                </div>
+             </div>
+          </div>
+       )}
+
        {!isJoined ? (
          <div className="bg-card p-6 rounded-lg border border-border">
            <h2 className="text-xl font-semibold mb-4">Join Live Session</h2>
