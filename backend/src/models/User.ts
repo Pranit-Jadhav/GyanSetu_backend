@@ -3,7 +3,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 export enum UserRole {
   STUDENT = 'STUDENT',
   TEACHER = 'TEACHER',
-  ADMIN = 'ADMIN'
+  ADMIN = 'ADMIN',
+  PARENT = 'PARENT'
 }
 
 export interface IUser extends Document {
@@ -11,6 +12,7 @@ export interface IUser extends Document {
   password: string;
   role: UserRole;
   name?: string;
+  children?: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,7 +22,8 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
     role: { type: String, enum: Object.values(UserRole), required: true },
-    name: { type: String }
+    name: { type: String },
+    children: [{ type: Schema.Types.ObjectId, ref: 'User' }]
   },
   { timestamps: true }
 );

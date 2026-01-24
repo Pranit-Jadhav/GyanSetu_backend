@@ -170,6 +170,28 @@
           }
         },
         {
+          "name": "Register Parent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"parent@example.com\",\n  \"password\": \"securepassword123\",\n  \"role\": \"PARENT\",\n  \"name\": \"Parent Name\",\n  \"childEmail\": \"student@gyansetu.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Register a parent user linked to an existing student."
+          }
+        },
+        {
           "name": "Login",
           "event": [
             {
@@ -1644,6 +1666,113 @@
               "path": ["websocket-test.html"]
             },
             "description": "⚠️ IMPORTANT: Postman doesn't fully support Socket.IO handshake/events.\n\n✅ Use the included test page:\n- Open: {{base_url}}/websocket-test.html\n\nSocket.IO Endpoint:\n- URL: http://localhost:3001\n- Namespace: /classroom\n- Path: /socket.io (default)\n\nClient connect example:\nio('http://localhost:3001/classroom', { auth: { token: STUDENT_JWT } })\n\n🔐 Authentication:\n- socket.handshake.auth.token = JWT\n\n📡 CORE EVENTS (LOCKED)\n\nTeacher/Admin → Server:\n- CREATE_SESSION { classId, topic }\n- LAUNCH_POLL { sessionId, question, options[] }\n- END_SESSION { sessionId } → Ends session voluntarily\n\nServer → Teacher/Admin:\n- SESSION_CREATED { sessionId }\n- CONFUSION_UPDATE { totalSignals, confusedPercentage }\n- ENGAGEMENT_UPDATE { avgEngagement, lowEngagementCount }\n- POLL_RESULTS { results, totalResponses }\n- SESSION_ENDED_CONFIRM { sessionId }\n- SESSION_STATS { totalStudents }\n\nStudent → Server:\n- JOIN_SESSION { sessionId }\n- CONFUSION_SIGNAL { level: 1 }\n- ENGAGEMENT_SIGNAL { idleTime, scrollSpeed, tabFocus }\n- POLL_RESPONSE { pollId, optionIndex }\n- LEAVE_SESSION { sessionId } → Leaves session voluntarily\n\nServer → Student:\n- JOINED_SESSION { sessionId, anonymousId }\n- POLL_LAUNCHED { pollId, question, options[] }\n- SESSION_ENDED { sessionId, message }\n- LEFT_SESSION { sessionId, message }\n\nSteps to test (quick):\n1) Login TEACHER in Postman → copy token\n2) Open websocket-test.html in Tab A (Teacher mode), paste token, Connect\n3) Enter classId + topic → CREATE_SESSION → copy sessionId\n4) Login STUDENT in Postman → copy token\n5) Open websocket-test.html in Tab B/C (Student mode), paste token, Connect\n6) Paste sessionId → JOIN_SESSION → click CONFUSION_SIGNAL / ENGAGEMENT_SIGNAL\n7) Back in teacher tab, observe CONFUSION_UPDATE / ENGAGEMENT_UPDATE\n8) Teacher launches poll → students respond → teacher receives POLL_RESULTS\n9) Student can LEAVE_SESSION or Teacher can END_SESSION\n\nFull guide: WEBSOCKET_TESTING_GUIDE.md"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📈 Teacher Learning Pace",
+      "description": "Learning velocity tracking, at-risk detection, and class pace overview.",
+      "item": [
+        {
+          "name": "Seed Mock Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"classId\": \"{{class_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/teacher/seed",
+              "host": ["{{base_url}}"],
+              "path": ["api", "teacher", "seed"]
+            },
+            "description": "Generate mock historical mastery snapshots for testing learning pace features."
+          }
+        },
+        {
+          "name": "Class Learning Pace Overview",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/teacher/class/{{class_id}}/learning-pace",
+              "host": ["{{base_url}}"],
+              "path": ["api", "teacher", "class", "{{class_id}}", "learning-pace"]
+            },
+            "description": "Get overview of students classified by learning pace (Fast, Steady, Plateaued, Struggling)."
+          }
+        },
+        {
+          "name": "Get At-Risk Students",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/teacher/class/{{class_id}}/at-risk",
+              "host": ["{{base_url}}"],
+              "path": ["api", "teacher", "class", "{{class_id}}", "at-risk"]
+            },
+            "description": "Identify students at risk based on low mastery and negative velocity."
+          }
+        },
+        {
+          "name": "Student Velocity Detail",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{teacher_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/teacher/student/{{student_id}}/learning-velocity",
+              "host": ["{{base_url}}"],
+              "path": ["api", "teacher", "student", "{{student_id}}", "learning-velocity"]
+            },
+            "description": "Get detailed learning velocity metrics for a specific student."
           }
         }
       ]

@@ -27,4 +27,13 @@ export class AnalyticsController {
       next(error);
     }
   };
+  getParentDashboard = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const parentId = req.user!.userId;
+      const dashboard = await this.analyticsService.getParentDashboard(parentId);
+      res.json(dashboard);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

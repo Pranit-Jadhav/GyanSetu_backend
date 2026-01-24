@@ -1,0 +1,7 @@
+{
+  "email": "parent@example.com",
+  "password": "securepassword123",
+  "role": "PARENT",
+  "name": "Parent Name",
+  "childEmail": "student@example.com"
+}

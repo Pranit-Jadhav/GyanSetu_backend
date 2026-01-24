@@ -8,16 +8,30 @@ interface RegisterInput {
   password: string;
   role: UserRole;
   name?: string;
+  childEmail?: string;
 }
 
 export class AuthService {
   async register(input: RegisterInput) {
-    const { email, password, role, name } = input;
+    const { email, password, role, name, childEmail } = input;
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new AppError('User already exists', 400);
+    }
+
+    // Handle Parent-Child linking
+    let childrenIds: string[] = [];
+    if (role === UserRole.PARENT) {
+      if (!childEmail) {
+        throw new AppError('Child email is required for Parent registration', 400);
+      }
+      const student = await User.findOne({ email: childEmail, role: UserRole.STUDENT });
+      if (!student) {
+        throw new AppError('Student with provided email not found', 404);
+      }
+      childrenIds = [student._id.toString()];
     }
 
     // Hash password
@@ -28,7 +42,8 @@ export class AuthService {
       email,
       password: hashedPassword,
       role,
-      name
+      name,
+      children: childrenIds.length > 0 ? childrenIds : undefined
     });
 
     // Generate token

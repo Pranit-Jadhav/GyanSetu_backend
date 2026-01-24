@@ -112,4 +112,49 @@ export class AnalyticsService {
       atRiskStudents: atRiskCount
     };
   }
+
+  async getParentDashboard(parentId: string) {
+    const parent = await User.findById(parentId).populate('children');
+    if (!parent) throw new Error('Parent not found');
+
+    // For "one parent one child" requirement, we take the first child or return empty if none
+    const children = parent.children as unknown as any[]; // casting for populated field
+    if (!children || children.length === 0) {
+      return {
+        children: []
+      };
+    }
+
+    // Process the first child (or map all if we wanted to support multiple later)
+    const child = children[0];
+    const studentId = child._id;
+
+    // Get Mastery
+    const masteryRecords = await MasteryRecord.find({ studentId });
+    const avgMastery = masteryRecords.length > 0
+      ? masteryRecords.reduce((sum, r) => sum + r.masteryScore, 0) / masteryRecords.length
+      : 0;
+
+    // Get Engagement
+    const recentLogs = await EngagementLog.find({
+      userId: studentId,
+      timestamp: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+    });
+    const avgEngagement = recentLogs.length > 0
+      ? recentLogs.reduce((sum, log) => sum + log.engagementIndex, 0) / recentLogs.length
+      : 0;
+
+    // Get Recent Activity (from logs or attempts)
+    // Simplified: Just returning mastery/engagement stats for the dashboard overview
+    
+    return {
+      studentId: studentId.toString(),
+      studentName: child.name || child.email,
+      averageMastery: Math.round(avgMastery),
+      averageEngagement: Math.round(avgEngagement * 100) / 100,
+      masteryTrend: [65, 68, 70, 72, 75, avgMastery], // Mock trend for now
+      completionRate: 85, // Mock completion rate
+      recentAlerts: [] // Mock alerts
+    };
+  }
 }

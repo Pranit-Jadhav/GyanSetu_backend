@@ -62,6 +62,18 @@ const Header = ({
       roles: ['teacher', 'admin'],
     },
     {
+      label: 'Parent Dashboard',
+      href: '/parent/dashboard',
+      icon: 'UserGroupIcon',
+      roles: ['parent'],
+    },
+    {
+      label: 'Admin Dashboard',
+      href: '/admin/dashboard',
+      icon: 'ChartPieIcon',
+      roles: ['admin'],
+    },
+    {
       label: 'Analytics Dashboard',
       href: '/teacher-analytics-hub',
       icon: 'ChartBarIcon',

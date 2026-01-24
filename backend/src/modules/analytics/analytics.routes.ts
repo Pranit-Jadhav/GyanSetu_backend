@@ -7,5 +7,6 @@ const analyticsController = new AnalyticsController();
 
 router.get('/teacher', authenticate, authorize('TEACHER', 'ADMIN'), analyticsController.getTeacherDashboard);
 router.get('/admin', authenticate, authorize('ADMIN'), analyticsController.getAdminDashboard);
+router.get('/parent', authenticate, authorize('PARENT'), analyticsController.getParentDashboard);
 
 export default router;

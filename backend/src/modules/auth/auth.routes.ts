@@ -11,8 +11,9 @@ const registerSchema = z.object({
   body: z.object({
     email: z.string().email(),
     password: z.string().min(6),
-    role: z.enum(['STUDENT', 'TEACHER', 'ADMIN']),
-    name: z.string().optional()
+    role: z.enum(['STUDENT', 'TEACHER', 'ADMIN', 'PARENT']),
+    name: z.string().optional(),
+    childEmail: z.string().email().optional()
   })
 });
 
