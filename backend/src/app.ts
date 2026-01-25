@@ -21,6 +21,7 @@ import assessmentRoutes from "./modules/assessment/assessment.routes";
 import curriculumRoutes from "./modules/curriculum/curriculum.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import learningPaceRoutes from "./modules/learning-pace/learning-pace.routes";
+import attendanceRoutes from "./modules/attendance/attendance.routes";
 
 dotenv.config();
 
@@ -73,6 +74,7 @@ app.use("/api/projects", pblRoutes);
 app.use("/api/soft-skills", softSkillsRoutes);
 app.use("/api/dashboard", analyticsRoutes);
 app.use("/api/teacher", learningPaceRoutes);
+app.use("/api/attendance", attendanceRoutes);
 
 // Error handling
 app.use(errorHandler);

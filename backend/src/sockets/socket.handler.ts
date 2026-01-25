@@ -114,10 +114,10 @@ export class SocketHandler {
         
         const startTime = Date.now();
 
-        // Create initial Attendance record
+        // Create initial Attendance record (Only for Students)
         let attendanceId = '';
         try {
-          if (mongoose.Types.ObjectId.isValid(user.userId) && mongoose.Types.ObjectId.isValid(session.classId)) {
+          if (user.role === 'STUDENT' && mongoose.Types.ObjectId.isValid(user.userId) && mongoose.Types.ObjectId.isValid(session.classId)) {
             const attendance = await Attendance.create({
                 studentId: new mongoose.Types.ObjectId(user.userId),
                 sessionId: session.sessionId,
@@ -128,6 +128,8 @@ export class SocketHandler {
                 warnings: 0
             });
             attendanceId = attendance._id.toString();
+          } else if (user.role !== 'STUDENT') {
+             // Do not create attendance for teachers/admins
           } else {
              console.warn('Invalid ObjectId for studentId or classId, skipping attendance record.');
           }

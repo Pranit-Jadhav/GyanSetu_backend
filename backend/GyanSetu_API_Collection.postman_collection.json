@@ -1794,6 +1794,81 @@
           }
         }
       ]
+    },
+    {
+      "name": "📅 Attendance",
+      "description": "Attendance tracking. WHY: Allows fetching attendance history for students, parents, and teachers.",
+      "item": [
+        {
+          "name": "My History (Student)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{student_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/attendance/my-history",
+              "host": ["{{base_url}}"],
+              "path": ["api", "attendance", "my-history"]
+            },
+            "description": "Get attendance history for the logged-in student."
+          }
+        },
+        {
+          "name": "Get Student Attendance (Parent/Teacher)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/attendance/student/{{student_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "attendance", "student", "{{student_id}}"]
+            },
+            "description": "Get attendance history for a specific student ID."
+          }
+        },
+        {
+          "name": "Get Class Attendance (Teacher)",
+          "request": {
+            "auth": {
+               "type": "bearer",
+               "bearer": [
+                 {
+                   "key": "token",
+                   "value": "{{teacher_token}}",
+                   "type": "string"
+                 }
+               ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/attendance/class/{{class_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "attendance", "class", "{{class_id}}"]
+            },
+            "description": "Get attendance records for a specific class."
+          }
+        }
+      ]
     }
   ]
 }
