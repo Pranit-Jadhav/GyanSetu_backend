@@ -2,7 +2,7 @@ import express, { Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import dotenv from "dotenv";
+import "dotenv/config";
 import { connectDB } from "./utils/database";
 // import { connectRedis } from "./utils/redis"; // Redis disabled for now
 import { errorHandler } from "./middlewares/errorHandler";
@@ -23,7 +23,7 @@ import adminRoutes from "./modules/admin/admin.routes";
 import learningPaceRoutes from "./modules/learning-pace/learning-pace.routes";
 import attendanceRoutes from "./modules/attendance/attendance.routes";
 
-dotenv.config();
+
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;

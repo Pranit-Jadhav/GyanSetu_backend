@@ -7,7 +7,7 @@ import StudentProgressInteractive from './components/StudentProgressInteractive'
 
 export default function StudentProgressPortalPage() {
   const { user, token, isAuthenticated, isLoading } = useAuth();
-  const hasAccess = user && user.role === 'student';
+  const hasAccess = user && user.role.toLowerCase() === 'student';
   const [masteryData, setMasteryData] = useState<any>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 

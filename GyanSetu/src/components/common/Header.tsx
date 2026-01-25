@@ -97,6 +97,12 @@ const Header = ({
       icon: 'AcademicCapIcon',
       roles: ['student', 'teacher', 'admin'],
     },
+    {
+      label: 'Launch PBL',
+      href: 'https://pbl-flax.vercel.app/login',
+      icon: 'AcademicCapIcon',
+      roles: ['student', 'teacher', 'admin'],
+    },
   ];
 
   const filteredNavItems = navigationItems.filter((item) =>

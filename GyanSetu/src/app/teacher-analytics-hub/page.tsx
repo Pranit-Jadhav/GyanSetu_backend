@@ -7,7 +7,7 @@ import TeacherAnalyticsInteractive from './components/TeacherAnalyticsInteractiv
 
 export default function TeacherAnalyticsHubPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const hasAccess = user && (user.role === 'teacher' || user.role === 'admin');
+  const hasAccess = user && (user.role.toLowerCase() === 'teacher' || user.role.toLowerCase() === 'admin');
 
   if (isLoading) {
     return (

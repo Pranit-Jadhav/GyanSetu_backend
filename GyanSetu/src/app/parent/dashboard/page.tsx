@@ -18,7 +18,7 @@ export default function ParentDashboardPage() {
     );
   }
 
-  if (!isAuthenticated || user?.role !== 'parent') {
+  if (!isAuthenticated || user?.role?.toLowerCase() !== 'parent') {
      if (typeof window !== 'undefined') {
        if (!isAuthenticated) window.location.href = '/auth/signin';
        else window.location.href = '/'; 

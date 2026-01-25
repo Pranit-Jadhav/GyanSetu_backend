@@ -10,7 +10,7 @@ interface SignUpFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'student' | 'teacher';
+  role: 'student' | 'teacher' | 'parent';
 }
 
 export default function SignUpPage() {
@@ -70,10 +70,17 @@ export default function SignUpPage() {
       localStorage.setItem('gyansetu_user', JSON.stringify(data.user));
 
       // Redirect to appropriate dashboard
-      if (data.user.role === 'teacher') {
+      const role = data.user.role.toLowerCase();
+      if (role === 'teacher') {
         router.push('/teacher-analytics-hub');
-      } else {
+      } else if (role === 'student') {
         router.push('/student-progress-portal');
+      } else if (role === 'admin') {
+        router.push('/admin/dashboard');
+      } else if (role === 'parent') {
+        router.push('/parent/dashboard');
+      } else {
+        router.push('/');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -205,6 +212,7 @@ export default function SignUpPage() {
                 >
                   <option value="student">Student</option>
                   <option value="teacher">Teacher</option>
+                  <option value="parent">Parent</option>
                 </select>
                 <Icon
                   name="AcademicCapIcon"

@@ -28,8 +28,23 @@ export default function SignInPage() {
     if (token && user) {
       try {
         const parsedUser = JSON.parse(user);
-        // If authenticated, redirect to home which will handle role-based routing
-        router.push('/');
+        // Direct redirect based on role
+        if (parsedUser && parsedUser.role) {
+          const role = parsedUser.role.toLowerCase();
+          if (role === 'teacher') {
+            router.push('/teacher-analytics-hub');
+          } else if (role === 'student') {
+            router.push('/student-progress-portal');
+          } else if (role === 'admin') {
+            router.push('/admin/dashboard');
+          } else if (role === 'parent') {
+            router.push('/parent/dashboard');
+          } else {
+            router.push('/');
+          }
+        } else {
+          router.push('/');
+        }
       } catch (error) {
         // If stored data is corrupted, clear it
         localStorage.removeItem('gyansetu_token');
@@ -74,10 +89,15 @@ export default function SignInPage() {
       localStorage.setItem('gyansetu_user', JSON.stringify(transformedUser));
 
       // Redirect based on role
-      if (transformedUser.role === 'teacher' || transformedUser.role === 'admin') {
+      const role = transformedUser.role.toLowerCase();
+      if (role === 'teacher') {
         router.push('/teacher-analytics-hub');
-      } else if (transformedUser.role === 'student') {
+      } else if (role === 'student') {
         router.push('/student-progress-portal');
+      } else if (role === 'admin') {
+        router.push('/admin/dashboard');
+      } else if (role === 'parent') {
+        router.push('/parent/dashboard');
       } else {
         router.push('/');
       }

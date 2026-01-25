@@ -13,10 +13,15 @@ export default function HomePage() {
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
       // Redirect based on role
-      if (user.role === 'teacher' || user.role === 'admin') {
+      const role = user.role.toLowerCase();
+      if (role === 'teacher') {
         router.push('/teacher-analytics-hub');
-      } else if (user.role === 'student') {
+      } else if (role === 'student') {
         router.push('/student-progress-portal');
+      } else if (role === 'admin') {
+        router.push('/admin/dashboard');
+      } else if (role === 'parent') {
+        router.push('/parent/dashboard');
       }
     }
   }, [isAuthenticated, user, isLoading, router]);

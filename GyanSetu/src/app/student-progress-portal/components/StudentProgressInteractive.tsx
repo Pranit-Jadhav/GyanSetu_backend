@@ -102,9 +102,9 @@ const StudentProgressInteractive = ({
         </div>
       </div>
 
-      <MasteryTimeline milestones={milestones} />
+      {/* <MasteryTimeline milestones={milestones} />
 
-      <ProjectKanban tasks={kanbanTasks} />
+      <ProjectKanban tasks={kanbanTasks} /> */}
     </div>
   );
 };

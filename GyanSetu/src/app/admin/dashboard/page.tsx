@@ -18,7 +18,7 @@ export default function AdminDashboardPage() {
     );
   }
 
-  if (!isAuthenticated || user?.role !== 'admin') {
+  if (!isAuthenticated || user?.role?.toLowerCase() !== 'admin') {
      if (typeof window !== 'undefined') {
        if (!isAuthenticated) window.location.href = '/auth/signin';
        else window.location.href = '/'; 
