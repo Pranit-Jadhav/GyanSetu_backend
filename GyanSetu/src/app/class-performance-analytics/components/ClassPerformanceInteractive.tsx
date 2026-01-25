@@ -8,22 +8,86 @@ import EngagementCorrelationChart from './EngagementCorrelationChart';
 import ConceptDifficultyHeatmap from './ConceptDifficultyHeatmap';
 import PerformanceDataGrid from './PerformanceDataGrid';
 import Icon from '@/components/ui/AppIcon';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ClassPerformanceInteractiveProps {}
 
 const ClassPerformanceInteractive = ({}: ClassPerformanceInteractiveProps) => {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const { token } = useAuth();
   const [isHydrated, setIsHydrated] = useState(false);
-  const [selectedClasses, setSelectedClasses] = useState<string[]>([
-  'all-classes']
-  );
+  const [selectedClasses, setSelectedClasses] = useState<string[]>(['all-classes']);
   const [academicPeriod, setAcademicPeriod] = useState('current-semester');
-  const [comparisonMode, setComparisonMode] = useState<
-    'class-to-class' | 'historical'>(
-    'class-to-class');
+  const [comparisonMode, setComparisonMode] = useState<'class-to-class' | 'historical'>('class-to-class');
+  
+  // Learning Pace State
+  const [paceData, setPaceData] = useState<any>(null);
+  const [isLoadingPace, setIsLoadingPace] = useState(false);
+  const [realClasses, setRealClasses] = useState<any[]>([]);
 
   useEffect(() => {
     setIsHydrated(true);
-  }, []);
+
+    // Fetch classes list for dropdown
+    const fetchClasses = async () => {
+        if (!token) return;
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/classes`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const list = data.classrooms || data; // Handle wrapper object
+                
+                if (Array.isArray(list)) {
+                    // Normalize to expected format
+                    const normalized = list.map((c: any) => ({
+                        id: c._id || c.id,
+                        className: c.className || c.name,
+                        subject: c.subject || c.course
+                    }));
+                    setRealClasses(normalized); 
+                }
+            }
+        } catch (e) { console.error(e); }
+    };
+    fetchClasses();
+  }, [token]);
+
+  // Fetch Learning Pace when a specific class is selected
+  useEffect(() => {
+     const fetchPace = async () => {
+         if (!token || selectedClasses[0] === 'all-classes') {
+            setPaceData(null);
+            return;
+         }
+         
+         setIsLoadingPace(true);
+         try {
+             // selectedClasses[0] might be 'class-1' (mock) or real ID. 
+             // Ideally we map 'class-1' to a real ID if we want to test, or just depend on real data from dropdown.
+             // For now, let's assume if it matches a real class ID, we fetch.
+             
+             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/teacher/class/${selectedClasses[0]}/learning-pace`, {
+                 headers: { Authorization: `Bearer ${token}` }
+             });
+             
+             if (response.ok) {
+                 const data = await response.json();
+                 setPaceData(data);
+             } else {
+                 // Fallback or error handling
+                 setPaceData(null);
+             }
+         } catch (err) {
+             console.error("Failed to fetch pace", err);
+         } finally {
+             setIsLoadingPace(false);
+         }
+     };
+
+     fetchPace();
+  }, [selectedClasses, token]);
 
   const executiveSummaryData = [
   {
@@ -265,10 +329,19 @@ const ClassPerformanceInteractive = ({}: ClassPerformanceInteractiveProps) => {
               onChange={(e) => setSelectedClasses([e.target.value])}
               className="w-full px-4 py-2 rounded-md bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-smooth">
 
-              {availableClasses.map((cls) =>
-              <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </option>
+              <option value="all-classes">All Classes</option>
+              {realClasses.length > 0 ? (
+                  realClasses.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                        {cls.className} ({cls.subject})
+                    </option>
+                  ))
+              ) : (
+                  availableClasses.filter(c => c.id !== 'all-classes').map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                    </option>
+                  ))
               )}
             </select>
           </div>
@@ -336,7 +409,7 @@ const ClassPerformanceInteractive = ({}: ClassPerformanceInteractiveProps) => {
         <div className="lg:col-span-2 space-y-6">
           <MasteryDistributionChart data={masteryDistributionData} />
           <EngagementCorrelationChart data={engagementCorrelationData} />
-          <ConceptDifficultyHeatmap data={conceptDifficultyData} />
+          {/* <ConceptDifficultyHeatmap data={conceptDifficultyData} /> */}
         </div>
 
         <div className="space-y-6">
@@ -410,6 +483,135 @@ const ClassPerformanceInteractive = ({}: ClassPerformanceInteractiveProps) => {
       </div>
 
       <PerformanceDataGrid data={performanceGridData} />
+      
+      {/* Learning Pace Section - Added based on request */}
+      <div className="bg-card rounded-lg border border-border p-6 mb-6">
+          <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+                   <Icon name="ChartBarIcon" size={24} className="text-indigo-600" />
+              </div>
+              <div>
+                  <h3 className="text-lg font-heading font-semibold text-foreground">Learning Velocity Insights</h3>
+                  <p className="text-sm text-muted-foreground">Real-time categorization based on mastery progression velocity</p>
+              </div>
+          </div>
+
+          {!paceData && !isLoadingPace && (
+              <div className="text-center p-8 bg-muted/30 rounded-lg text-muted-foreground">
+                  {selectedClasses[0] === 'all-classes' 
+                      ? "Select a specific class to view detailed student velocity analysis." 
+                      : "No learning velocity data available for this class."}
+              </div>
+          )}
+
+          {isLoadingPace && (
+             <div className="text-center p-8 text-muted-foreground">Loading velocity analysis...</div>
+          )}
+
+          {paceData && (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                  {/* Fast Learners */}
+                  <div className="border border-emerald-100 bg-emerald-50/50 rounded-xl p-5">
+                      <h4 className="flex items-center gap-2 font-bold text-emerald-800 mb-4 text-sm uppercase tracking-wide">
+                          <Icon name="LightningBoltIcon" size={18} />
+                          Fast Processors
+                      </h4>
+                      {paceData.fast_progressing.length > 0 ? (
+                          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                              {paceData.fast_progressing.map((s: any) => (
+                                  <div key={s.id} className="bg-white p-3 rounded-lg border border-emerald-100 shadow-sm flex flex-col gap-1">
+                                      <div className="flex items-center gap-2">
+                                          <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-[10px]">
+                                              {s.name.charAt(0)}
+                                          </div>
+                                          <div className="font-medium text-sm text-foreground truncate">{s.name}</div>
+                                      </div>
+                                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full w-fit">Velocity &gt; 1.5</span>
+                                  </div>
+                              ))}
+                          </div>
+                      ) : (
+                          <p className="text-xs text-muted-foreground italic">No students in this category.</p>
+                      )}
+                  </div>
+
+                  {/* Steady Learners */}
+                  <div className="border border-blue-100 bg-blue-50/50 rounded-xl p-5">
+                      <h4 className="flex items-center gap-2 font-bold text-blue-800 mb-4 text-sm uppercase tracking-wide">
+                          <Icon name="ChartBarIcon" size={18} />
+                          Steady Growth
+                      </h4>
+                      {paceData.steady.length > 0 ? (
+                          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                              {paceData.steady.map((s: any) => (
+                                  <div key={s.id} className="bg-white p-3 rounded-lg border border-blue-100 shadow-sm flex flex-col gap-1">
+                                      <div className="flex items-center gap-2">
+                                          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-[10px]">
+                                              {s.name.charAt(0)}
+                                          </div>
+                                          <div className="font-medium text-sm text-foreground truncate">{s.name}</div>
+                                      </div>
+                                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full w-fit">Steady Pace</span>
+                                  </div>
+                              ))}
+                          </div>
+                      ) : (
+                          <p className="text-xs text-muted-foreground italic">No students in this category.</p>
+                      )}
+                  </div>
+
+                  {/* Plateaued Learners */}
+                  <div className="border border-gray-200 bg-gray-50/50 rounded-xl p-5">
+                      <h4 className="flex items-center gap-2 font-bold text-gray-700 mb-4 text-sm uppercase tracking-wide">
+                          <Icon name="MinusCircleIcon" size={18} />
+                          Plateaued
+                      </h4>
+                      {paceData.plateaued.length > 0 ? (
+                          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                              {paceData.plateaued.map((s: any) => (
+                                  <div key={s.id} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-1">
+                                      <div className="flex items-center gap-2">
+                                          <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-[10px]">
+                                              {s.name.charAt(0)}
+                                          </div>
+                                          <div className="font-medium text-sm text-foreground truncate">{s.name}</div>
+                                      </div>
+                                      <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full w-fit">No Change</span>
+                                  </div>
+                              ))}
+                          </div>
+                      ) : (
+                          <p className="text-xs text-muted-foreground italic">No students in this category.</p>
+                      )}
+                  </div>
+
+                  {/* Struggling Learners */}
+                  <div className="border border-amber-100 bg-amber-50/50 rounded-xl p-5">
+                      <h4 className="flex items-center gap-2 font-bold text-amber-800 mb-4 text-sm uppercase tracking-wide">
+                          <Icon name="ExclamationCircleIcon" size={18} />
+                          Needs Attention
+                      </h4>
+                       {paceData.struggling.length > 0 ? (
+                          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                              {paceData.struggling.map((s: any) => (
+                                  <div key={s.id} className="bg-white p-3 rounded-lg border border-amber-100 shadow-sm flex flex-col gap-1">
+                                      <div className="flex items-center gap-2">
+                                          <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-[10px]">
+                                              {s.name.charAt(0)}
+                                          </div>
+                                          <div className="font-medium text-sm text-foreground truncate">{s.name}</div>
+                                      </div>
+                                      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full w-fit">Regressing</span>
+                                  </div>
+                              ))}
+                          </div>
+                      ) : (
+                          <p className="text-xs text-muted-foreground italic">No students in this category.</p>
+                      )}
+                  </div>
+              </div>
+          )}
+      </div>
 
       <div className="bg-card rounded-lg border border-border p-6">
         <div className="flex items-start gap-3">

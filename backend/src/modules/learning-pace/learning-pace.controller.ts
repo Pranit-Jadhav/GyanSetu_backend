@@ -20,7 +20,28 @@ export class LearningPaceController {
       const studentIds = students.map((s: any) => s.id);
       
       const result = await this.learningPaceService.getClassPaceOverviewByIds(studentIds);
-      res.json(result);
+      
+      // Map IDs back to student details
+      const enrichWithDetails = (ids: string[]) => {
+        return ids.map(id => {
+            const student = students.find((s: any) => s.id === id || s._id.toString() === id);
+            return {
+                id: student?.id || student?._id,
+                name: student?.name || 'Unknown',
+                email: student?.email
+            };
+        });
+      };
+
+      const enrichedResult = {
+          fast_progressing: enrichWithDetails(result.fast_progressing),
+          steady: enrichWithDetails(result.steady),
+          plateaued: enrichWithDetails(result.plateaued),
+          struggling: enrichWithDetails(result.struggling),
+          unknown: enrichWithDetails(result.unknown)
+      };
+
+      res.json(enrichedResult);
     } catch (error) {
       next(error);
     }
